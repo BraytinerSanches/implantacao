@@ -200,7 +200,36 @@ body.dirty .det-bar .pending{display:inline-flex}
 .st{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .st-c{background:#E3F2EA;color:#1F6B47}.st-a{background:#E1EEF8;color:#0A5A92}.st-w{background:#FFF1E0;color:#9A4A00}.st-g{background:var(--field);color:var(--muted);border:1px solid var(--line)}
 .autosave{font-size:13px;color:var(--muted)}
-.itabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 10px}
+.itabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 2px;margin-bottom:16px}
+.tabpct{font-size:12px;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:4px;color:var(--muted)}
+.chk-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.chk-head h3{font:700 22px "Barlow Condensed",sans-serif;margin:0}
+.chk-head p{margin:2px 0 0;color:var(--muted);font-size:13.5px;max-width:720px}
+.chk-info{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:14px}
+@media (max-width:1000px){.chk-info{grid-template-columns:repeat(3,1fr)}}
+.chk-info div{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+.chk-info span{display:block;font-size:11.5px;color:var(--muted)}
+.chk-info b{font-size:14.5px}
+.chk-metrics{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:16px}
+@media (max-width:1000px){.chk-metrics{grid-template-columns:1fr}}
+.mt{width:100%;border-collapse:collapse;font-size:14px}
+.mt th{font-size:12px;color:var(--muted);font-weight:600;text-align:right;padding:4px 6px}
+.mt th:first-child{text-align:left}
+.mt td{padding:5px 6px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.mt td:first-child{text-align:left}
+.mt input{width:110px;text-align:right;padding:4px 6px}
+.dpos{color:#1F6B47;font-weight:700}.dneg{color:#B3261E;font-weight:700}
+.auto-tag{font-size:11px;color:var(--blue);display:block;margin-top:2px}
+table.ck td{vertical-align:middle;padding:7px 8px}
+table.ck td.n{width:34px;text-align:center;color:var(--muted)}
+table.ck select{min-width:84px;padding:5px 6px;font-weight:700}
+table.ck select.sim{background:#E3F2EA;color:#1F6B47}table.ck select.nao{background:#FBE4E2;color:#9B2019}
+.ck-badge{display:inline-block;font-weight:700;font-size:12.5px;border-radius:999px;padding:3px 10px}
+.ck-badge.sim{background:#E3F2EA;color:#1F6B47}.ck-badge.nao{background:#FBE4E2;color:#9B2019}
+.ck-sec{font:700 17px "Barlow Condensed",sans-serif;margin:18px 0 8px}
+.cfgchk{display:grid;grid-template-columns:64px 190px 1fr 240px 34px;gap:6px;align-items:center;margin-bottom:6px}
+.cfgchk.h{font-size:12px;color:var(--muted);font-weight:600}
+@media (max-width:900px){.cfgchk{grid-template-columns:1fr 1fr}}
 .itabs button{background:transparent;border:0;border-radius:0;color:var(--muted);padding:12px 12px 10px;border-bottom:3px solid transparent}
 .itabs button.active{color:var(--ink);border-bottom-color:var(--orange)}
 table.et td{padding:5px 4px;vertical-align:middle}
@@ -215,6 +244,7 @@ table.et .pbar{min-width:56px}
 table.et th.c-obs{width:30%}
 table.et select[data-f=resp]{min-width:96px}
 table.et select[data-f=status]{min-width:138px}
+table.et select[data-f=modalidade]{min-width:108px}
 table.et td.ord{white-space:nowrap;text-align:center}
 .ordb{display:inline-flex;flex-direction:column;vertical-align:middle;margin-left:4px}
 .ordb button{padding:0 5px;font-size:9px;line-height:1.3;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:3px}
@@ -354,6 +384,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <span class="autosave" id="implAuto"></span>
     <button class="b-alt" id="btnImplCsv" style="color:var(--ink)">Exportar CSV</button>
     <button class="b-alt" id="btnImplImg" style="color:var(--ink)">Exportar imagem</button>
+    <button class="b-alt" id="btnImplPdf" style="color:var(--ink)">Exportar PDF</button>
     <button class="b-save" id="btnImplSave">Salvar</button>
     <button class="b-danger" id="btnImplDelete" hidden>Excluir</button>
   </div>
@@ -365,20 +396,33 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <label class="f">Responsável do cliente<input type="text" id="imCliente"></label>
       <label class="f">Produtos do contrato<input type="text" id="imProdutos" placeholder="Separe por vírgula"></label>
     </div>
+    <div class="row">
+      <label class="f">Coordenador<input type="text" id="imCoord"></label>
+      <label class="f">Produto implantado<select id="imProduto"></select></label>
+      <label class="f">Data de início<input type="date" id="imInicio"></label>
+      <label class="f">Data de fim<input type="date" id="imFim"></label>
+    </div>
     <div class="msg-err" id="implMsg" role="status"></div>
   </div>
-  <div class="groups" id="implGroups"></div>
   </div>
+  <div class="itabs" role="tablist" id="implTabs">
+    <button type="button" class="active" data-tab="atv">Atividades</button>
+    <button type="button" data-tab="chk">Checklist <span class="tabpct" id="chkTabPct"></span></button>
+  </div>
+  <div id="tabAtv">
+  <div class="groups" id="implGroups"></div>
   <div class="det-card" style="padding:0">
     <h3 class="cardh">Atividades do projeto</h3>
     <div id="itAtv" style="padding:0 16px 14px">
       <div class="ls-wrap"><table class="ls-table et" id="atvTable"><thead><tr>
         <th>Ordem</th><th>Atividade</th><th>Ativ. prev.</th><th>Ativ. real</th><th>Dias prev.</th><th>Dias real</th>
-        <th>Início</th><th>Fim</th><th>% concl.</th><th>Responsável</th><th>Status</th><th class="c-obs">Observação</th><th></th>
+        <th>Início</th><th>Fim</th><th>% concl.</th><th>Responsável</th><th>Modalidade</th><th>Status</th><th class="c-obs">Observação</th><th></th>
       </tr></thead><tbody id="atvBody"></tbody></table></div>
       <button type="button" class="b-add" id="btnAddAtv">+ Adicionar atividade</button>
     </div>
   </div>
+  </div>
+  <div id="tabChk" hidden></div>
   <datalist id="atvSug"></datalist>
 </section>
 
@@ -388,6 +432,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-ct="users" class="active">Usuários</button>
     <button type="button" data-ct="ana">Analistas</button>
     <button type="button" data-ct="cat">Catálogo de atividades</button>
+    <button type="button" data-ct="chk">Checklist</button>
   </div>
   <div id="cfgUsers">
   <div id="storageCard"></div>
@@ -413,6 +458,14 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
         <input type="text" id="anaNew" placeholder="Nome do analista" aria-label="Nome do novo analista">
         <button type="button" class="b-main" id="btnAddAna">Adicionar</button>
       </div>
+    </div>
+  </div>
+  <div id="cfgChk" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Itens do checklist</h3>
+      <p class="cfgp">Itens que aparecem no checklist de todas as implantações. Ao vincular uma atividade, o item vira "Sim" automaticamente quando essa atividade estiver Concluída na implantação. Itens sem vínculo são marcados manualmente.</p>
+      <div id="chkCfgList"></div>
+      <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
     </div>
   </div>
   <div id="cfgCat" hidden>
@@ -1061,13 +1114,20 @@ function openImpl(id){
   const c = currentImpl.dados.cliente || {};
   $('#imNome').value = c.nome || r?.cliente || ''; setImplAnalista(c.cittati || '');
   $('#imCliente').value = c.cliente || ''; $('#imProdutos').value = (c.produtos||[]).join(', ');
+  $('#imCoord').value = c.coordenador || ''; $('#imInicio').value = c.inicio || ''; $('#imFim').value = c.fim || '';
+  $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
+  $('#imProduto').value = c.produto || '';
+  currentImpl.dados.checklist ||= { itens:{} };
+  implTab('atv'); loadChecklistTpl();
   $('#implMsg').textContent = ''; $('#implAuto').textContent = ''; clearTimeout(implTimer); markClean(); renderImplDet(); show('implDet');
   loadCatalog();
   $('#btnImplDelete').hidden = !(isAdmin && currentImpl.id);
 }
+const PRODUTOS = ['Flits','Gool','ICS','CDF','NAAV','VISTTA','Outros'];
 function readImplHeader(){
   return { nome:$('#imNome').value.trim(), cittati:$('#imCittati').value.trim(), cliente:$('#imCliente').value.trim(),
-    produtos:$('#imProdutos').value.split(',').map(x=>x.trim()).filter(Boolean) };
+    produtos:$('#imProdutos').value.split(',').map(x=>x.trim()).filter(Boolean),
+    coordenador:$('#imCoord').value.trim(), produto:$('#imProduto').value, inicio:$('#imInicio').value, fim:$('#imFim').value };
 }
 const RESP_OPTS = ['Cittati','Cliente'];
 const STATUS_OPTS = ['Aguardando','Em andamento','Atenção','Concluído'];
@@ -1105,10 +1165,11 @@ function renderAtvTable(){
     <td><input type="date" data-f="fim" value="${esc(a.fim||'')}"></td>
     <td class="pc" title="Calculado: Ativ. real ÷ Ativ. prevista">${pbar(Number(a.pct)||0)}</td>
     <td><select data-f="resp" class="${a.resp==='Cliente'?'r-cli':'r-cit'}">${opt(RESP_OPTS,a.resp)}</select></td>
+    <td><select data-f="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'],a.modalidade)}</select></td>
     <td><select data-f="status" class="${STATUS_SEL[a.status]||'s-g'}">${opt(STATUS_OPTS,a.status)}</select></td>
     <td><textarea rows="1" data-f="obs" placeholder="—">${esc(a.obs||'')}</textarea></td>
     <td><button type="button" class="b-del" data-del aria-label="Remover atividade" title="Remover atividade">×</button></td>
-  </tr>`).join('') : '<tr><td colspan="13" class="empty" style="border:0">Nenhuma atividade ainda. Clique em "+ Adicionar atividade".</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="14" class="empty" style="border:0">Nenhuma atividade ainda. Clique em "+ Adicionar atividade".</td></tr>';
   requestAnimationFrame(() => document.querySelectorAll('#atvBody textarea').forEach(grow));
 }
 function grow(t){ t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
@@ -1125,7 +1186,7 @@ function renderImplDet(){
 
 /* edição da tabela */
 function atvById(id){ return (currentImpl.dados.atividades||[]).find(a => String(a.id) === String(id)); }
-function implChanged(){ markDirty(); scheduleImplSave(); }
+function implChanged(){ markDirty(); scheduleImplSave(); if (chkTpl) updateChkPct(); }
 $('#atvBody').addEventListener('input', e => {
   const el = e.target, f = el.dataset.f; if (!f) return;
   if (el.tagName === 'TEXTAREA') grow(el);
@@ -1156,7 +1217,7 @@ $('#atvBody').addEventListener('click', async e => {
 $('#btnAddAtv').addEventListener('click', () => {
   const atv = currentImpl.dados.atividades ||= [];
   const id = atv.reduce((m,a) => Math.max(m, Number(a.id)||0), 0) + 1;
-  atv.push({ id, ordem: atv.length + 1, nome:'', catalogId:null, prev:0, real:0, diasPrev:0, diasReal:0, inicio:'', fim:'', pct:0, resp:'Cittati', status:'Aguardando', obs:'' });
+  atv.push({ id, ordem: atv.length + 1, nome:'', catalogId:null, prev:0, real:0, diasPrev:0, diasReal:0, inicio:'', fim:'', pct:0, resp:'Cittati', modalidade:'', status:'Aguardando', obs:'' });
   renderAtvTable(); renderGroupsImpl(); implChanged();
   $(`#atvBody tr[data-id="${id}"] input[data-f=nome]`).focus();
 });
@@ -1164,10 +1225,11 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk';
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'cat'){ loadCatalog(); }
+  else if (t === 'chk'){ loadCatalog().then(loadChecklistTpl); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
 
@@ -1277,32 +1339,202 @@ function scheduleImplSave(){
 $('#btnImplCsv').addEventListener('click', async () => {
   const c = readImplHeader(), atv = sortAtv();
   const q = v => { v = String(v ?? ''); return /[";\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; };
-  const lines = [['Ordem','Atividade','Ativ. prev.','Ativ. real','Dias prev.','Dias real','Início','Fim','% concl.','Responsável','Status','Observação']]
-    .concat(atv.map(a => [a.ordem, a.nome, a.prev, a.real, String(a.diasPrev).replace('.',','), String(a.diasReal).replace('.',','), a.inicio?fmtDate(a.inicio):'', a.fim?fmtDate(a.fim):'', (a.pct||0)+'%', a.resp, a.status, a.obs]));
+  const lines = [['Ordem','Atividade','Ativ. prev.','Ativ. real','Dias prev.','Dias real','Início','Fim','% concl.','Responsável','Modalidade','Status','Observação']]
+    .concat(atv.map(a => [a.ordem, a.nome, a.prev, a.real, String(a.diasPrev).replace('.',','), String(a.diasReal).replace('.',','), a.inicio?fmtDate(a.inicio):'', a.fim?fmtDate(a.fim):'', (a.pct||0)+'%', a.resp, a.modalidade||'', a.status, a.obs]));
   const csv = '\ufeff' + lines.map(l => l.map(q).join(';')).join('\r\n');
   await save(`Implantacao_${fileSlug(c.nome)}.csv`, new Blob([csv], { type:'text/csv;charset=utf-8' })); flash('CSV exportado.');
 });
-$('#btnImplImg').addEventListener('click', async () => {
+async function captureImpl(){
   const el = $('#implDetView');
-  const canvas = await html2canvas(el, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor, useCORS:true,
+  return html2canvas(el, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor, useCORS:true,
     windowWidth: Math.max(1400, el.scrollWidth + 80),
     onclone: d => { d.querySelectorAll('.ls-wrap').forEach(w => { w.style.overflow = 'visible'; }); const v = d.getElementById('implDetView'); v.style.maxWidth = 'none';
-      d.querySelectorAll('.det-bar button, .det-bar .autosave, .det-bar .pending, #btnAddAtv, .itabs, #itCat, .b-del, .ordb').forEach(x => x.style.display = 'none');
+      d.querySelectorAll('.det-bar button, .det-bar .autosave, .det-bar .pending, #btnAddAtv, .b-del, .ordb, #implMsg').forEach(x => x.style.display = 'none');
+      d.querySelectorAll('#implTabs button:not(.active)').forEach(x => x.style.display = 'none');
       // troca os campos por texto para a imagem ficar legível
       d.querySelectorAll('#implDetView input, #implDetView select, #implDetView textarea').forEach(x => {
-        const sp = d.createElement('span'); let v = x.value;
+        const sp = d.createElement('span'); let v = x.tagName === 'SELECT' ? (x.options[x.selectedIndex]?.text || '') : x.value;
         if (x.type === 'date') v = v ? v.split('-').reverse().join('/') : '—';
+        if (v === 'Selecione') v = '';
         sp.textContent = v || '—'; sp.style.cssText = 'display:inline-block;padding:4px 2px;font-size:13.5px;white-space:pre-wrap;' + (x.tagName === 'SELECT' ? 'font-weight:700;padding:2px 8px;border-radius:999px;' : '');
         if (x.tagName === 'SELECT'){ const cs = getComputedStyle(x); sp.style.background = cs.backgroundColor; sp.style.color = cs.color; }
         if (x.closest('#implForm')) sp.style.fontWeight = '600';
         x.replaceWith(sp); });
       d.querySelectorAll('#atvTable th').forEach(th => th.style.minWidth = '0'); } });
+}
+function implFileBase(){ const t = $('#tabChk').hidden ? 'Implantacao' : 'Checklist'; return `${t}_${fileSlug(readImplHeader().nome)}`; }
+$('#btnImplImg').addEventListener('click', async () => {
+  const canvas = await captureImpl();
   const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-  await save(`Implantacao_${fileSlug(readImplHeader().nome)}.png`, blob); flash('Imagem exportada.');
+  await save(implFileBase() + '.png', blob); flash('Imagem exportada.');
 });
+$('#btnImplPdf').addEventListener('click', async () => {
+  const c = await captureImpl();
+  const { jsPDF } = window.jspdf;
+  const land = c.width > c.height;
+  const pdf = new jsPDF({ unit:'mm', format:'a4', orientation: land ? 'landscape' : 'portrait' });
+  const pw = land ? 297 : 210, ph = land ? 210 : 297, m = 8;
+  const w = pw - 2*m, pxPerMm = c.width / w, pagePx = Math.floor((ph - 2*m) * pxPerMm);
+  for (let y = 0, i = 0; y < c.height; y += pagePx, i++){
+    const sh = Math.min(pagePx, c.height - y), pc = document.createElement('canvas'); pc.width = c.width; pc.height = sh;
+    const ctx = pc.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,pc.width,sh); ctx.drawImage(c, 0, y, c.width, sh, 0, 0, c.width, sh);
+    if (i) pdf.addPage();
+    pdf.addImage(pc.toDataURL('image/jpeg', .92), 'JPEG', m, m, w, sh / pxPerMm);
+  }
+  await save(implFileBase() + '.pdf', pdf.output('blob')); flash('PDF exportado.');
+});
+
+/* ---------- abas da implantação ---------- */
+function implTab(t){
+  document.querySelectorAll('#implTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  $('#tabAtv').hidden = t !== 'atv'; $('#tabChk').hidden = t !== 'chk';
+  $('#btnImplCsv').hidden = t !== 'atv';
+  if (t === 'chk') renderChecklist();
+}
+document.querySelectorAll('#implTabs button').forEach(b => b.addEventListener('click', () => implTab(b.dataset.tab)));
+
+/* ---------- checklist ---------- */
+const SECOES = ['Pasta do Teams','Informações complementares','Power Apps','RDV'];
+let chkTpl = [];
+async function loadChecklistTpl(){
+  const { data, error } = await sb.from('checklist_itens').select('id,secao,texto,ordem,atividade').order('ordem');
+  if (error){ chkTpl = null; $('#chkTabPct').textContent = ''; if (!$('#tabChk').hidden) renderChecklist(error.message); return; }
+  chkTpl = data; updateChkPct(); if (!$('#tabChk').hidden) renderChecklist();
+  if (!$('#cfgChk').hidden) renderChkCfg();
+}
+function chkItemValue(item){
+  const st = currentImpl.dados.checklist.itens[item.id] || {};
+  if (item.atividade){
+    const a = (currentImpl.dados.atividades||[]).find(x => (x.nome||'').trim().toLowerCase() === item.atividade.trim().toLowerCase());
+    if (a) return { feito: a.status === 'Concluído' ? 'Sim' : 'Não', auto:true, atv:a.nome, obs: st.obs || '' };
+  }
+  return { feito: st.feito || 'Não', auto:false, obs: st.obs || '' };
+}
+function chkProgress(){
+  if (!chkTpl || !chkTpl.length) return 0;
+  return Math.round(chkTpl.filter(i => chkItemValue(i).feito === 'Sim').length / chkTpl.length * 100);
+}
+function updateChkPct(){ $('#chkTabPct').textContent = chkTpl && chkTpl.length ? chkProgress() + '%' : ''; }
+function diasPorModalidade(mod){
+  const rows = (currentImpl.dados.atividades||[]).filter(a => a.modalidade === mod);
+  return { prev: rows.reduce((t,a) => t + (Number(a.diasPrev)||0), 0), real: rows.reduce((t,a) => t + (Number(a.diasReal)||0), 0) };
+}
+const nfmt = v => (Math.round(v*10)/10).toLocaleString('pt-BR');
+const diffCls = v => v > 0 ? 'dpos' : v < 0 ? 'dneg' : '';
+function renderChecklist(err){
+  const box = $('#tabChk');
+  if (err || chkTpl === null){ box.innerHTML = `<div class="note">Checklist indisponível${err ? ': ' + esc(err) : ''}. Confira se o script do checklist foi executado no Supabase.</div>`; return; }
+  const c = readImplHeader(), ck = currentImpl.dados.checklist, prog = chkProgress();
+  const rem = diasPorModalidade('Remoto'), pre = diasPorModalidade('Presencial');
+  const brl = v => v === '' || v == null ? '' : v;
+  const custoDif = (Number(ck.custoPrev)||0) - (Number(ck.custoReal)||0);
+  const pesqDif = (Number(ck.pesqReal)||0) - (Number(ck.pesqPrev)||0);
+  const money = v => (Number(v)||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+  const secs = SECOES.concat([...new Set(chkTpl.map(i => i.secao))].filter(x => !SECOES.includes(x)));
+  let n = 0;
+  box.innerHTML = `
+  <div class="det-card">
+    <div class="chk-head"><div><h3>Checklist de implantação (Scorecard – Analistas de implantação)</h3>
+      <p>Para todas as implantações é obrigatório este checklist, que deve ser apresentado pelo analista na reunião do primeiro dia após o encerramento da implantação.</p></div>
+      <div style="min-width:220px"><span style="font-size:12px;color:var(--muted)">Progresso do checklist</span>${pbar(prog)}</div></div>
+    <div class="chk-info">
+      <div><span>Empresa</span><b>${esc(c.nome||'—')}</b></div>
+      <div><span>Coordenador</span><b>${esc(c.coordenador||'—')}</b></div>
+      <div><span>Produto implantado</span><b>${esc(c.produto||'—')}</b></div>
+      <div><span>Analista</span><b>${esc(c.cittati||'—')}</b></div>
+      <div><span>Início</span><b>${c.inicio ? fmtDate(c.inicio) : '—'}</b></div>
+      <div><span>Fim</span><b>${c.fim ? fmtDate(c.fim) : '—'}</b></div>
+    </div>
+    <p style="margin:8px 0 0;font-size:12.5px;color:var(--muted)">Esses dados vêm do cabeçalho da implantação. Para alterar, edite os campos acima.</p>
+  </div>
+  <div class="chk-metrics">
+    <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Tempo de implantação</h3>
+      <table class="mt"><tr><th>Dias</th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
+        <tr><td>Remoto</td><td>${nfmt(rem.prev)}</td><td>${nfmt(rem.real)}</td><td class="${diffCls(rem.prev-rem.real)}">${nfmt(rem.prev-rem.real)}</td></tr>
+        <tr><td>Presencial</td><td>${nfmt(pre.prev)}</td><td>${nfmt(pre.real)}</td><td class="${diffCls(pre.prev-pre.real)}">${nfmt(pre.prev-pre.real)}</td></tr></table>
+      <span class="auto-tag">Calculado pela coluna Modalidade das atividades</span></div>
+    <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Custo da implantação</h3>
+      <table class="mt"><tr><th></th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
+        <tr><td>Total (R$)</td><td><input type="number" min="0" step="0.01" data-ck="custoPrev" value="${brl(ck.custoPrev)}"></td><td><input type="number" min="0" step="0.01" data-ck="custoReal" value="${brl(ck.custoReal)}"></td>
+        <td class="${diffCls(custoDif)}" id="ckCustoDif">${money(custoDif)}</td></tr></table></div>
+    <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Pesquisa de satisfação</h3>
+      <table class="mt"><tr><th></th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
+        <tr><td>Total (%)</td><td><input type="number" min="0" max="100" step="1" data-ck="pesqPrev" value="${brl(ck.pesqPrev)}"></td><td><input type="number" min="0" max="100" step="1" data-ck="pesqReal" value="${brl(ck.pesqReal)}"></td>
+        <td class="${diffCls(pesqDif)}" id="ckPesqDif">${nfmt(pesqDif)}%</td></tr></table></div>
+  </div>
+  <div class="det-card">
+    ${secs.map(sec => { const items = chkTpl.filter(i => i.secao === sec); if (!items.length) return '';
+      return `<h4 class="ck-sec">${esc(sec)}</h4><div class="ls-wrap"><table class="ls-table ck"><thead><tr><th>#</th><th>Item</th><th style="width:150px">Feito</th><th style="width:38%">Observação</th></tr></thead><tbody>
+      ${items.map(i => { n++; const v = chkItemValue(i); return `<tr data-ck-id="${i.id}"><td class="n">${n}</td><td>${esc(i.texto)}${v.auto ? `<span class="auto-tag">Automático: atividade "${esc(v.atv)}"</span>` : ''}</td>
+        <td>${v.auto ? `<span class="ck-badge ${v.feito==='Sim'?'sim':'nao'}">${v.feito}</span>` : `<select data-ckf="feito" class="${v.feito==='Sim'?'sim':'nao'}"><option${v.feito==='Sim'?' selected':''}>Sim</option><option${v.feito!=='Sim'?' selected':''}>Não</option></select>`}</td>
+        <td><input type="text" data-ckf="obs" value="${esc(v.obs)}" placeholder="—"></td></tr>`; }).join('')}
+      </tbody></table></div>`; }).join('') || '<div class="empty">Nenhum item de checklist configurado. Cadastre em Configurações > Checklist.</div>'}
+    <h4 class="ck-sec">Observações para registro</h4>
+    <textarea data-ck="obs" rows="3" style="width:100%;font:14px 'Barlow',sans-serif;padding:8px;border:1px solid var(--line);border-radius:5px;background:var(--field);color:var(--ink)">${esc(ck.obs||'')}</textarea>
+  </div>`;
+  updateChkPct();
+}
+$('#tabChk').addEventListener('input', e => {
+  const ck = currentImpl.dados.checklist, el = e.target;
+  if (el.dataset.ck){ ck[el.dataset.ck] = el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value;
+    const custoDif = (Number(ck.custoPrev)||0) - (Number(ck.custoReal)||0), pesqDif = (Number(ck.pesqReal)||0) - (Number(ck.pesqPrev)||0);
+    const cd = $('#ckCustoDif'), pd = $('#ckPesqDif');
+    if (cd){ cd.textContent = custoDif.toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); cd.className = diffCls(custoDif); }
+    if (pd){ pd.textContent = nfmt(pesqDif) + '%'; pd.className = diffCls(pesqDif); }
+  } else if (el.dataset.ckf){
+    const id = el.closest('tr').dataset.ckId; const it = ck.itens[id] ||= {};
+    it[el.dataset.ckf] = el.value;
+    if (el.dataset.ckf === 'feito'){ el.className = el.value === 'Sim' ? 'sim' : 'nao'; renderChecklistProgressOnly(); }
+  } else return;
+  implChanged();
+});
+$('#tabChk').addEventListener('change', e => { if (e.target.tagName === 'SELECT') e.target.dispatchEvent(new Event('input', { bubbles:true })); });
+function renderChecklistProgressOnly(){
+  const p = chkProgress(); const pc = $('#tabChk .chk-head .pcell'); if (pc) pc.outerHTML = pbar(p); updateChkPct();
+}
+
+/* ---------- configurações: itens do checklist ---------- */
+function renderChkCfg(){
+  const box = $('#chkCfgList');
+  if (chkTpl === null){ box.innerHTML = '<div class="note">Checklist indisponível. Confira se o script do checklist foi executado no Supabase.</div>'; return; }
+  const atvNames = [...new Set(catalogo.map(c => c.nome))].sort((a,b) => a.localeCompare(b,'pt-BR'));
+  const secs = SECOES.concat([...new Set(chkTpl.map(i => i.secao))].filter(x => !SECOES.includes(x)));
+  box.innerHTML = `<div class="cfgchk h"><span>Ordem</span><span>Seção</span><span>Item</span><span>Atividade vinculada</span><span></span></div>` +
+    [...chkTpl].sort((a,b) => secs.indexOf(a.secao) - secs.indexOf(b.secao) || a.ordem - b.ordem).map(i => `<div class="cfgchk" data-iid="${i.id}">
+      <input type="number" min="1" data-cc="ordem" value="${i.ordem}" aria-label="Ordem">
+      <select data-cc="secao" aria-label="Seção">${secs.map(x => `<option${x===i.secao?' selected':''}>${esc(x)}</option>`).join('')}</select>
+      <input type="text" data-cc="texto" value="${esc(i.texto)}" aria-label="Texto do item">
+      <select data-cc="atividade" aria-label="Atividade vinculada"><option value="">Sem vínculo (manual)</option>${atvNames.concat(i.atividade && !atvNames.includes(i.atividade) ? [i.atividade] : []).map(x => `<option${x===i.atividade?' selected':''}>${esc(x)}</option>`).join('')}</select>
+      <button type="button" class="b-del" data-ccdel aria-label="Remover item" title="Remover item">×</button></div>`).join('');
+}
+$('#chkCfgList').addEventListener('change', async e => {
+  const f = e.target.dataset.cc; if (!f) return;
+  const id = e.target.closest('[data-iid]').dataset.iid, it = chkTpl.find(x => String(x.id) === id);
+  let v = e.target.value; if (f === 'ordem') v = parseInt(v,10) || 1; if (f === 'atividade') v = v || null; if (f === 'texto' && !v.trim()) return;
+  const { error } = await sb.from('checklist_itens').update({ [f]: v }).eq('id', id);
+  if (error){ flash('Erro: ' + error.message); return; }
+  it[f] = v; if (f === 'ordem' || f === 'secao') renderChkCfg(); flash('Item atualizado.');
+});
+$('#chkCfgList').addEventListener('click', async e => {
+  if (!e.target.closest('[data-ccdel]')) return;
+  const it = chkTpl.find(x => String(x.id) === e.target.closest('[data-iid]').dataset.iid);
+  const v = await ask('Remover item do checklist?', `"${it.texto}" deixará de aparecer no checklist de todas as implantações.`, [['Cancelar','b-ghost',null],['Remover','b-danger','ok']]);
+  if (!v) return;
+  const { error } = await sb.from('checklist_itens').delete().eq('id', it.id);
+  if (error) flash('Erro: ' + error.message); else { chkTpl = chkTpl.filter(x => x !== it); renderChkCfg(); }
+});
+$('#btnAddChkItem').addEventListener('click', async () => {
+  const ordem = chkTpl.filter(i => i.secao === SECOES[0]).reduce((m,i) => Math.max(m, i.ordem), 0) + 1;
+  const item = { secao: SECOES[0], texto: 'Novo item', ordem, atividade: null };
+  const { data, error } = await sb.from('checklist_itens').insert(item).select('id').single();
+  if (error){ flash('Erro: ' + error.message); return; }
+  chkTpl.push({ id:data.id, ...item }); renderChkCfg();
+  const inp = $(`#chkCfgList [data-iid="${data.id}"] input[data-cc=texto]`); inp.focus(); inp.select();
+});
+
 function fileSlug(t){ return (t || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,''); }
 
-$('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação'; implChanged(); });
+$('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação'; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist(); implChanged(); });
 $('#btnNewImpl').addEventListener('click', () => openImpl(null));
 $('#btnImplBack').addEventListener('click', () => go('impl'));
 
