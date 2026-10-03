@@ -163,7 +163,11 @@ label.chip:has(input:checked){background:var(--orange);border-color:var(--orange
 .mainnav button:hover{color:var(--topink)}
 .mainnav button.active{color:var(--topink);border-bottom-color:var(--orange)}
 body[data-screen="login"] .mainnav{display:none}
-body[data-screen^="impl"] .tabs, body[data-screen^="impl"] #wrap, body[data-screen^="impl"] .ed-only, body[data-screen^="impl"] #listView{display:none!important}
+body[data-screen^="impl"] .ed-only, body[data-screen^="impl"] #listView{display:none!important}
+body[data-screen="impl"] #wrap{display:none!important}
+#tabEnt .wrap{padding:0;max-width:none}
+#tabEnt .tabs{padding:0 0 10px}
+.locked{background:var(--bg)!important;color:var(--muted)!important;cursor:not-allowed}
 body:not([data-screen="impl"]) #implView{display:none}
 body:not([data-screen="implDet"]) #implDetView{display:none}
 body[data-screen="config"] .tabs, body[data-screen="config"] #wrap, body[data-screen="config"] .ed-only, body[data-screen="config"] #listView{display:none!important}
@@ -333,14 +337,10 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
 
 <nav class="mainnav" aria-label="Módulos">
   <button type="button" data-go="impl">Implantações</button>
-  <button type="button" data-go="list">Entregas para Suporte</button>
   <button type="button" data-go="config" class="adm-only">Configurações</button>
 </nav>
 
-<div class="tabs" role="tablist">
-  <button role="tab" aria-selected="true" data-v="form">Preencher</button>
-  <button role="tab" aria-selected="false" data-v="preview">Prévia</button>
-</div>
+
 
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="box"><h2 id="mTitle"></h2><p id="mText"></p><div class="mb" id="mButtons"></div></div>
@@ -408,6 +408,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div class="itabs" role="tablist" id="implTabs">
     <button type="button" class="active" data-tab="atv">Atividades</button>
     <button type="button" data-tab="chk">Checklist <span class="tabpct" id="chkTabPct"></span></button>
+    <button type="button" data-tab="ent">Entrega para Suporte</button>
   </div>
   <div id="tabAtv">
   <div class="groups" id="implGroups"></div>
@@ -423,76 +424,13 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   </div>
   </div>
   <div id="tabChk" hidden></div>
-  <datalist id="atvSug"></datalist>
-</section>
-
-<section id="configView">
-  <div class="ls-bar"><h2>Configurações</h2></div>
-  <div class="ctabs" role="tablist">
-    <button type="button" data-ct="users" class="active">Usuários</button>
-    <button type="button" data-ct="ana">Analistas</button>
-    <button type="button" data-ct="cat">Catálogo de atividades</button>
-    <button type="button" data-ct="chk">Checklist</button>
-  </div>
-  <div id="cfgUsers">
-  <div id="storageCard"></div>
-  <form class="newuser" id="newUserForm" autocomplete="off">
-    <h3>Novo usuário</h3>
-    <div class="row">
-      <label class="f">Nome<input type="text" id="nuNome" required></label>
-      <label class="f">E-mail<input type="email" id="nuEmail" required></label>
-      <label class="f">Senha inicial<input type="text" id="nuPass" minlength="8" required placeholder="mín. 8 caracteres"></label>
-      <button type="submit" class="b-main" id="nuBtn">Criar usuário</button>
-    </div>
-    <label class="chk"><input type="checkbox" id="nuAdmin"> Administrador (pode excluir registros e gerenciar usuários)</label>
-    <div class="msg-err" id="nuMsg" role="status"></div>
-  </form>
-  <div id="usersBody"></div>
-  </div>
-  <div id="cfgAna" hidden>
-    <div class="det-card">
-      <h3 class="cfgh">Analistas</h3>
-      <p class="cfgp">Nomes que aparecem para seleção no campo de analista das implantações e das entregas para suporte. Remover um nome não altera os registros que já usam esse analista.</p>
-      <div id="anaList"></div>
-      <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
-        <input type="text" id="anaNew" placeholder="Nome do analista" aria-label="Nome do novo analista">
-        <button type="button" class="b-main" id="btnAddAna">Adicionar</button>
-      </div>
-    </div>
-  </div>
-  <div id="cfgChk" hidden>
-    <div class="det-card">
-      <h3 class="cfgh">Itens do checklist</h3>
-      <p class="cfgp">Itens que aparecem no checklist de todas as implantações. Ao vincular uma atividade, o item vira "Sim" automaticamente quando essa atividade estiver Concluída na implantação. Itens sem vínculo são marcados manualmente.</p>
-      <div id="chkCfgList"></div>
-      <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
-    </div>
-  </div>
-  <div id="cfgCat" hidden>
-    <div class="det-card">
-      <h3 class="cfgh">Catálogo de atividades</h3>
-      <p class="cfgp">Nomes sugeridos ao preencher a coluna Atividade nas implantações. O catálogo é compartilhado por todas as implantações.</p>
-      <div id="catList"></div>
-      <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
-        <input type="text" id="catNew" placeholder="Nova atividade do catálogo" aria-label="Nova atividade do catálogo">
-        <button type="button" class="b-main" id="btnAddCat">Adicionar</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-
-<section id="listView">
-  <div class="ls-bar">
-    <h2>Registros de entrega</h2>
-    <input type="text" id="lsSearch" placeholder="Buscar por empresa ou analista" aria-label="Buscar">
-    <button class="b-main" id="btnNew">+ Nova entrega</button>
-  </div>
-  <div id="lsBody"></div>
-</section>
-
-<main class="wrap" id="wrap" data-view="form">
+  <div id="tabEnt" hidden>
+    <div class="note" id="entNote">Empresa, período, analista e responsável técnico vêm do cabeçalho da implantação. Para alterar, edite os campos acima.</div>
+    <div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-v="form">Preencher</button>
+  <button role="tab" aria-selected="false" data-v="preview">Prévia</button>
+</div>
+    <main class="wrap" id="wrap" data-view="form">
   <form class="form-col" id="form" autocomplete="off" onsubmit="return false">
 
     <fieldset>
@@ -569,6 +507,77 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <div id="status" role="status"></div>
   </section>
 </main>
+  </div>
+  <datalist id="atvSug"></datalist>
+</section>
+
+<section id="configView">
+  <div class="ls-bar"><h2>Configurações</h2></div>
+  <div class="ctabs" role="tablist">
+    <button type="button" data-ct="users" class="active">Usuários</button>
+    <button type="button" data-ct="ana">Analistas</button>
+    <button type="button" data-ct="cat">Catálogo de atividades</button>
+    <button type="button" data-ct="chk">Checklist</button>
+  </div>
+  <div id="cfgUsers">
+  <div id="storageCard"></div>
+  <form class="newuser" id="newUserForm" autocomplete="off">
+    <h3>Novo usuário</h3>
+    <div class="row">
+      <label class="f">Nome<input type="text" id="nuNome" required></label>
+      <label class="f">E-mail<input type="email" id="nuEmail" required></label>
+      <label class="f">Senha inicial<input type="text" id="nuPass" minlength="8" required placeholder="mín. 8 caracteres"></label>
+      <button type="submit" class="b-main" id="nuBtn">Criar usuário</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="nuAdmin"> Administrador (pode excluir registros e gerenciar usuários)</label>
+    <div class="msg-err" id="nuMsg" role="status"></div>
+  </form>
+  <div id="usersBody"></div>
+  </div>
+  <div id="cfgAna" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Analistas</h3>
+      <p class="cfgp">Nomes que aparecem para seleção no campo de analista das implantações e das entregas para suporte. Remover um nome não altera os registros que já usam esse analista.</p>
+      <div id="anaList"></div>
+      <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
+        <input type="text" id="anaNew" placeholder="Nome do analista" aria-label="Nome do novo analista">
+        <button type="button" class="b-main" id="btnAddAna">Adicionar</button>
+      </div>
+    </div>
+  </div>
+  <div id="cfgChk" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Itens do checklist</h3>
+      <p class="cfgp">Itens que aparecem no checklist de todas as implantações. Ao vincular uma atividade, o item vira "Sim" automaticamente quando essa atividade estiver Concluída na implantação. Itens sem vínculo são marcados manualmente.</p>
+      <div id="chkCfgList"></div>
+      <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
+    </div>
+  </div>
+  <div id="cfgCat" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Catálogo de atividades</h3>
+      <p class="cfgp">Nomes sugeridos ao preencher a coluna Atividade nas implantações. O catálogo é compartilhado por todas as implantações.</p>
+      <div id="catList"></div>
+      <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
+        <input type="text" id="catNew" placeholder="Nova atividade do catálogo" aria-label="Nova atividade do catálogo">
+        <button type="button" class="b-main" id="btnAddCat">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section id="listView">
+  <div class="ls-bar">
+    <h2>Registros de entrega</h2>
+    <input type="text" id="lsSearch" placeholder="Buscar por empresa ou analista" aria-label="Buscar">
+    <button class="b-main" id="btnNew">+ Nova entrega</button>
+  </div>
+  <div id="lsBody"></div>
+</section>
+
+
 
 <script>
 /* =========================================================
@@ -811,7 +820,7 @@ form.addEventListener('change', refresh);
 
 /* ---------- alterações não salvas ---------- */
 let dirty = false;
-function markDirty(){ dirty = true; document.body.classList.add('dirty'); }
+function markDirty(){ dirty = true; document.body.classList.add('dirty'); if (document.body.dataset.screen === 'implDet' && typeof entLoaded !== 'undefined' && entLoaded && !$('#tabEnt').hidden){ syncEntrega(); if (typeof scheduleImplSave === 'function') scheduleImplSave(); } }
 function markClean(){ dirty = false; document.body.classList.remove('dirty'); }
 window.addEventListener('beforeunload', e => { if (!dirty) return; e.preventDefault(); e.returnValue = ''; return ''; });
 
@@ -1118,6 +1127,7 @@ function openImpl(id){
   $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
   $('#imProduto').value = c.produto || '';
   currentImpl.dados.checklist ||= { itens:{} };
+  entLoaded = false; loadEntregaIntoForm(); entLoaded = true;
   implTab('atv'); loadChecklistTpl();
   $('#implMsg').textContent = ''; $('#implAuto').textContent = ''; clearTimeout(implTimer); markClean(); renderImplDet(); show('implDet');
   loadCatalog();
@@ -1251,6 +1261,7 @@ function fillAnalistaSelects(){
   $('#outroWrap').hidden = sel.value !== '__outro';
   // implantação
   setImplAnalista($('#imCittati').value);
+  if (currentImpl && entLoaded) applyEntregaLocks();
 }
 function setImplAnalista(v){
   const names = analistas.map(a => a.nome), s2 = $('#imCittati');
@@ -1364,11 +1375,13 @@ async function captureImpl(){
 }
 function implFileBase(){ const t = $('#tabChk').hidden ? 'Implantacao' : 'Checklist'; return `${t}_${fileSlug(readImplHeader().nome)}`; }
 $('#btnImplImg').addEventListener('click', async () => {
+  if (!$('#tabEnt').hidden) return entregaExport('png');
   const canvas = await captureImpl();
   const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
   await save(implFileBase() + '.png', blob); flash('Imagem exportada.');
 });
 $('#btnImplPdf').addEventListener('click', async () => {
+  if (!$('#tabEnt').hidden) return entregaExport('pdf');
   const c = await captureImpl();
   const { jsPDF } = window.jspdf;
   const land = c.width > c.height;
@@ -1384,12 +1397,56 @@ $('#btnImplPdf').addEventListener('click', async () => {
   await save(implFileBase() + '.pdf', pdf.output('blob')); flash('PDF exportado.');
 });
 
+/* ---------- entrega para suporte dentro da implantação ---------- */
+const SIST_MAP = { 'Flits':'Flits', 'ICS':'ICS', 'Gool':'GOOL System' };
+function loadEntregaIntoForm(){
+  const h = readImplHeader();
+  let e = currentImpl.dados.entrega;
+  if (!e){
+    // primeira vez: cria a entrega já preenchida com o que a implantação tem
+    e = { escopo: (h.produtos||[]).join(' + '), sistemas: SIST_MAP[h.produto] ? [SIST_MAP[h.produto]] : [],
+          contatos: h.cliente ? [{ cargo:'', nome:h.cliente, tel:'', mail:'' }] : [] };
+  }
+  fillState(e); applyEntregaLocks(); refresh();
+}
+function applyEntregaLocks(){
+  const h = readImplHeader(), f = form.elements;
+  f.empresa.value = h.nome; f.inicio.value = h.inicio || ''; f.fim.value = h.fim || ''; f.respTec.value = h.cliente || '';
+  const names = [...f.analista.options].map(o => o.value);
+  if (h.cittati && names.includes(h.cittati)){ f.analista.value = h.cittati; f.analistaOutro.value = ''; }
+  else if (h.cittati){ f.analista.value = '__outro'; f.analistaOutro.value = h.cittati; }
+  else { f.analista.value = ''; f.analistaOutro.value = ''; }
+  ['empresa','inicio','fim','respTec','analistaOutro'].forEach(n => { f[n].readOnly = true; f[n].classList.add('locked'); });
+  f.analista.disabled = true; f.analista.classList.add('locked');
+  $('#outroWrap').hidden = f.analista.value !== '__outro';
+}
+function syncEntrega(){ if (currentImpl && entLoaded) currentImpl.dados.entrega = readState(); }
+var entLoaded = false;
+form.addEventListener('input', () => { if (document.body.dataset.screen === 'implDet' && entLoaded){ syncEntrega(); implChanged(); } });
+async function entregaExport(kind){
+  syncEntrega();
+  try {
+    const c = await capture();
+    if (kind === 'png'){ const blob = await new Promise(r => c.toBlob(r, 'image/png')); await save(fileBase()+'.png', blob); flash('Imagem exportada.'); return; }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
+    const pw = 210, ph = 297, pxPerMm = c.width / pw, pagePx = Math.floor(ph * pxPerMm);
+    if (c.height <= pagePx * 1.12){ const h = c.height / pxPerMm, k = Math.min(1, ph / h); pdf.addImage(c.toDataURL('image/jpeg',0.95), 'JPEG', (pw - pw*k)/2, 0, pw*k, h*k); }
+    else for (let y = 0, i = 0; y < c.height; y += pagePx, i++){
+      const sh = Math.min(pagePx, c.height - y), pc = document.createElement('canvas'); pc.width = c.width; pc.height = sh;
+      const ctx = pc.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,pc.width,sh); ctx.drawImage(c, 0, y, c.width, sh, 0, 0, c.width, sh);
+      if (i) pdf.addPage(); pdf.addImage(pc.toDataURL('image/jpeg',0.95), 'JPEG', 0, 0, pw, sh/pxPerMm); }
+    await save(fileBase()+'.pdf', pdf.output('blob')); flash('PDF exportado.');
+  } catch(err){ console.error(err); flash('Erro ao gerar o arquivo.'); }
+}
+
 /* ---------- abas da implantação ---------- */
 function implTab(t){
   document.querySelectorAll('#implTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-  $('#tabAtv').hidden = t !== 'atv'; $('#tabChk').hidden = t !== 'chk';
+  $('#tabAtv').hidden = t !== 'atv'; $('#tabChk').hidden = t !== 'chk'; $('#tabEnt').hidden = t !== 'ent';
   $('#btnImplCsv').hidden = t !== 'atv';
   if (t === 'chk') renderChecklist();
+  if (t === 'ent'){ applyEntregaLocks(); refresh(); requestAnimationFrame(fitPreview); }
 }
 document.querySelectorAll('#implTabs button').forEach(b => b.addEventListener('click', () => implTab(b.dataset.tab)));
 
@@ -1450,9 +1507,9 @@ function renderChecklist(err){
   <div class="chk-metrics">
     <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Tempo de implantação</h3>
       <table class="mt"><tr><th>Dias</th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
-        <tr><td>Remoto</td><td>${nfmt(rem.prev)}</td><td>${nfmt(rem.real)}</td><td class="${diffCls(rem.prev-rem.real)}">${nfmt(rem.prev-rem.real)}</td></tr>
-        <tr><td>Presencial</td><td>${nfmt(pre.prev)}</td><td>${nfmt(pre.real)}</td><td class="${diffCls(pre.prev-pre.real)}">${nfmt(pre.prev-pre.real)}</td></tr></table>
-      <span class="auto-tag">Calculado pela coluna Modalidade das atividades</span></div>
+        ${[['Remoto','diasRemPrev',rem,'ckRemDif'],['Presencial','diasPresPrev',pre,'ckPresDif']].map(([l,k,v,id]) => { const pv = ck[k] === '' || ck[k] == null ? null : Number(ck[k]); const d = (pv ?? 0) - v.real;
+          return `<tr><td>${l}</td><td><input type="number" min="0" step="0.5" data-ck="${k}" value="${pv ?? ''}" placeholder="${nfmt(v.prev)}"></td><td>${nfmt(v.real)}</td><td class="${diffCls(d)}" id="${id}">${nfmt(d)}</td></tr>`; }).join('')}</table>
+      <span class="auto-tag">Previsto: digitado manualmente (sugestão das atividades no campo vazio). Realizado: soma dos dias reais pela coluna Modalidade.</span></div>
     <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Custo da implantação</h3>
       <table class="mt"><tr><th></th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
         <tr><td>Total (R$)</td><td><input type="number" min="0" step="0.01" data-ck="custoPrev" value="${brl(ck.custoPrev)}"></td><td><input type="number" min="0" step="0.01" data-ck="custoReal" value="${brl(ck.custoReal)}"></td>
@@ -1481,6 +1538,8 @@ $('#tabChk').addEventListener('input', e => {
     const cd = $('#ckCustoDif'), pd = $('#ckPesqDif');
     if (cd){ cd.textContent = custoDif.toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); cd.className = diffCls(custoDif); }
     if (pd){ pd.textContent = nfmt(pesqDif) + '%'; pd.className = diffCls(pesqDif); }
+    [['diasRemPrev','Remoto','ckRemDif'],['diasPresPrev','Presencial','ckPresDif']].forEach(([k,m,id]) => { const c2 = $('#'+id); if (!c2) return;
+      const d = (Number(ck[k])||0) - diasPorModalidade(m).real; c2.textContent = nfmt(d); c2.className = diffCls(d); });
   } else if (el.dataset.ckf){
     const id = el.closest('tr').dataset.ckId; const it = ck.itens[id] ||= {};
     it[el.dataset.ckf] = el.value;
@@ -1534,7 +1593,9 @@ $('#btnAddChkItem').addEventListener('click', async () => {
 
 function fileSlug(t){ return (t || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,''); }
 
-$('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação'; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist(); implChanged(); });
+$('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação'; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist();
+  { const sm = SIST_MAP[$('#imProduto').value]; const boxes = [...form.querySelectorAll('input[name=sistemas]')]; if (sm && !boxes.some(b => b.checked)){ const b = boxes.find(x => x.value === sm); if (b) b.checked = true; } }
+  applyEntregaLocks(); refresh(); syncEntrega(); implChanged(); });
 $('#btnNewImpl').addEventListener('click', () => openImpl(null));
 $('#btnImplBack').addEventListener('click', () => go('impl'));
 
@@ -1544,7 +1605,7 @@ async function saveImpl(silent){
   if (implSaving){ implTimer = setTimeout(() => saveImpl(silent), 800); return false; }
   const head = readImplHeader();
   if (!head.nome){ $('#implMsg').textContent = 'Informe o nome do cliente antes de salvar.'; if (!silent) $('#imNome').focus(); return false; }
-  currentImpl.dados.cliente = head;
+  currentImpl.dados.cliente = head; syncEntrega();
   implSaving = true; $('#btnImplSave').disabled = true; $('#implMsg').textContent = '';
   const payload = { cliente: head.nome, dados: currentImpl.dados };
   const res = currentImpl.id
