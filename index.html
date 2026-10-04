@@ -231,6 +231,17 @@ table.ck select.sim{background:#E3F2EA;color:#1F6B47}table.ck select.nao{backgro
 .ck-badge{display:inline-block;font-weight:700;font-size:12.5px;border-radius:999px;padding:3px 10px}
 .ck-badge.sim{background:#E3F2EA;color:#1F6B47}.ck-badge.nao{background:#FBE4E2;color:#9B2019}
 .ck-sec{font:700 17px "Barlow Condensed",sans-serif;margin:18px 0 8px}
+.chamado-card{display:flex;gap:14px;flex-wrap:wrap;padding:12px 16px}
+.prod-layout{display:grid;grid-template-columns:280px 1fr;gap:20px}
+@media (max-width:900px){.prod-layout{grid-template-columns:1fr}}
+.prod-item{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.prod-item button.sel{flex:1;text-align:left;background:var(--field);border:1px solid var(--line);color:var(--ink);font-weight:600}
+.prod-item button.sel.active{border-color:var(--orange);box-shadow:inset 3px 0 0 var(--orange)}
+.prod-item small{color:var(--muted);font-weight:500;margin-left:6px}
+.pa-row{display:grid;grid-template-columns:58px 1fr 110px 80px 80px 116px 34px;gap:6px;align-items:center;margin-bottom:6px}
+.pa-row.h{font-size:12px;color:var(--muted);font-weight:600}
+.pa-row .ordb{margin:0}
+@media (max-width:900px){.pa-row{grid-template-columns:44px 1fr 1fr}}
 .cfgchk{display:grid;grid-template-columns:64px 190px 1fr 240px 34px;gap:6px;align-items:center;margin-bottom:6px}
 .cfgchk.h{font-size:12px;color:var(--muted);font-weight:600}
 @media (max-width:900px){.cfgchk{grid-template-columns:1fr 1fr}}
@@ -394,7 +405,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <label class="f">Cliente<input type="text" id="imNome" placeholder="Nome da empresa"></label>
       <label class="f">Analista Cittati<select id="imCittati"><option value="">Selecione</option></select></label>
       <label class="f">Responsável do cliente<input type="text" id="imCliente"></label>
-      <label class="f">Produtos do contrato<input type="text" id="imProdutos" placeholder="Separe por vírgula"></label>
+      <label class="f">Produto contratado<select id="imProdutos"><option value="">Selecione</option></select></label>
     </div>
     <div class="row">
       <label class="f">Coordenador<input type="text" id="imCoord"></label>
@@ -411,6 +422,10 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-tab="ent">Entrega para Suporte</button>
   </div>
   <div id="tabAtv">
+  <div class="det-card chamado-card">
+    <label class="f" style="max-width:320px">Nº do chamado de implantação<input type="text" id="imChamado" placeholder="Ex.: 311851"></label>
+    <span class="auto-tag" style="align-self:end;padding-bottom:9px">Preenche automaticamente o item correspondente do Checklist</span>
+  </div>
   <div class="groups" id="implGroups"></div>
   <div class="det-card" style="padding:0">
     <h3 class="cardh">Atividades do projeto</h3>
@@ -518,6 +533,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-ct="ana">Analistas</button>
     <button type="button" data-ct="cat">Catálogo de atividades</button>
     <button type="button" data-ct="chk">Checklist</button>
+    <button type="button" data-ct="prod">Produtos</button>
   </div>
   <div id="cfgUsers">
   <div id="storageCard"></div>
@@ -551,6 +567,22 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <p class="cfgp">Itens que aparecem no checklist de todas as implantações. Ao vincular uma atividade, o item vira "Sim" automaticamente quando essa atividade estiver Concluída na implantação. Itens sem vínculo são marcados manualmente.</p>
       <div id="chkCfgList"></div>
       <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
+    </div>
+  </div>
+  <div id="cfgProd" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Produtos e atividades padrão</h3>
+      <p class="cfgp">Ao selecionar o produto contratado numa implantação, as atividades do projeto são preenchidas automaticamente nesta ordem.</p>
+      <div class="prod-layout">
+        <div>
+          <div id="prodList"></div>
+          <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
+            <input type="text" id="prodNew" placeholder="Novo produto (ex.: ICS + AUT18)" aria-label="Novo produto">
+            <button type="button" class="b-main" id="btnAddProd">Adicionar</button>
+          </div>
+        </div>
+        <div id="prodEditor"><div class="empty">Selecione um produto para editar as atividades padrão.</div></div>
+      </div>
     </div>
   </div>
   <div id="cfgCat" hidden>
@@ -980,7 +1012,7 @@ $('#btnMyPass').addEventListener('click', () => {
     return null;
   });
 });
-function flash(t){ const el = document.createElement('div'); el.textContent = t;
+function flash(t){ document.querySelectorAll('.flash-msg').forEach(x => x.remove()); const el = document.createElement('div'); el.className = 'flash-msg'; el.textContent = t;
   el.style.cssText = 'position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#02416C;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.25)';
   document.body.appendChild(el); setTimeout(() => el.remove(), 3200); }
 
@@ -1122,7 +1154,8 @@ function openImpl(id){
   currentImpl = r ? { id:r.id, dados: JSON.parse(JSON.stringify(r.dados||{})) } : { id:null, dados:{ cliente:{nome:'',cittati:'',cliente:'',produtos:[]}, atividades:[] } };
   const c = currentImpl.dados.cliente || {};
   $('#imNome').value = c.nome || r?.cliente || ''; setImplAnalista(c.cittati || '');
-  $('#imCliente').value = c.cliente || ''; $('#imProdutos').value = (c.produtos||[]).join(', ');
+  $('#imCliente').value = c.cliente || ''; setImplProduto((c.produtos||[]).join(' + '));
+  $('#imChamado').value = currentImpl.dados.chamado || '';
   $('#imCoord').value = c.coordenador || ''; $('#imInicio').value = c.inicio || ''; $('#imFim').value = c.fim || '';
   $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
   $('#imProduto').value = c.produto || '';
@@ -1136,7 +1169,7 @@ function openImpl(id){
 const PRODUTOS = ['Flits','Gool','ICS','CDF','NAAV','VISTTA','Outros'];
 function readImplHeader(){
   return { nome:$('#imNome').value.trim(), cittati:$('#imCittati').value.trim(), cliente:$('#imCliente').value.trim(),
-    produtos:$('#imProdutos').value.split(',').map(x=>x.trim()).filter(Boolean),
+    produtos:$('#imProdutos').value ? [$('#imProdutos').value] : [],
     coordenador:$('#imCoord').value.trim(), produto:$('#imProduto').value, inicio:$('#imInicio').value, fim:$('#imFim').value };
 }
 const RESP_OPTS = ['Cittati','Cliente'];
@@ -1235,11 +1268,12 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod';
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'cat'){ loadCatalog(); }
   else if (t === 'chk'){ loadCatalog().then(loadChecklistTpl); }
+  else if (t === 'prod'){ loadCatalog().then(loadProdutos); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
 
@@ -1461,6 +1495,10 @@ async function loadChecklistTpl(){
 }
 function chkItemValue(item){
   const st = currentImpl.dados.checklist.itens[item.id] || {};
+  if (item.atividade === '__chamado'){
+    const n = (currentImpl.dados.chamado || '').trim();
+    return { feito: n ? 'Sim' : 'Não', auto:true, atv:'Nº do chamado', obs: n || st.obs || '', lockObs: !!n };
+  }
   if (item.atividade){
     const a = (currentImpl.dados.atividades||[]).find(x => (x.nome||'').trim().toLowerCase() === item.atividade.trim().toLowerCase());
     if (a) return { feito: a.status === 'Concluído' ? 'Sim' : 'Não', auto:true, atv:a.nome, obs: st.obs || '' };
@@ -1482,7 +1520,6 @@ function renderChecklist(err){
   const box = $('#tabChk');
   if (err || chkTpl === null){ box.innerHTML = `<div class="note">Checklist indisponível${err ? ': ' + esc(err) : ''}. Confira se o script do checklist foi executado no Supabase.</div>`; return; }
   const c = readImplHeader(), ck = currentImpl.dados.checklist, prog = chkProgress();
-  const rem = diasPorModalidade('Remoto'), pre = diasPorModalidade('Presencial');
   const brl = v => v === '' || v == null ? '' : v;
   const custoDif = (Number(ck.custoPrev)||0) - (Number(ck.custoReal)||0);
   const pesqDif = (Number(ck.pesqReal)||0) - (Number(ck.pesqPrev)||0);
@@ -1507,9 +1544,8 @@ function renderChecklist(err){
   <div class="chk-metrics">
     <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Tempo de implantação</h3>
       <table class="mt"><tr><th>Dias</th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
-        ${[['Remoto','diasRemPrev',rem,'ckRemDif'],['Presencial','diasPresPrev',pre,'ckPresDif']].map(([l,k,v,id]) => { const pv = ck[k] === '' || ck[k] == null ? null : Number(ck[k]); const d = (pv ?? 0) - v.real;
-          return `<tr><td>${l}</td><td><input type="number" min="0" step="0.5" data-ck="${k}" value="${pv ?? ''}" placeholder="${nfmt(v.prev)}"></td><td>${nfmt(v.real)}</td><td class="${diffCls(d)}" id="${id}">${nfmt(d)}</td></tr>`; }).join('')}</table>
-      <span class="auto-tag">Previsto: digitado manualmente (sugestão das atividades no campo vazio). Realizado: soma dos dias reais pela coluna Modalidade.</span></div>
+        ${[['Remoto','diasRemPrev','diasRemReal','ckRemDif'],['Presencial','diasPresPrev','diasPresReal','ckPresDif']].map(([l,kp,kr,id]) => { const d = (parseInt(ck[kp])||0) - (parseInt(ck[kr])||0);
+          return `<tr><td>${l}</td><td><input type="number" min="0" step="1" data-ck="${kp}" data-int value="${ck[kp] ?? ''}"></td><td><input type="number" min="0" step="1" data-ck="${kr}" data-int value="${ck[kr] ?? ''}"></td><td class="${diffCls(d)}" id="${id}">${d}</td></tr>`; }).join('')}</table></div>
     <div class="det-card" style="margin:0"><h3 class="cfgh" style="font-size:17px">Custo da implantação</h3>
       <table class="mt"><tr><th></th><th>Previsto</th><th>Realizado</th><th>Dif.</th></tr>
         <tr><td>Total (R$)</td><td><input type="number" min="0" step="0.01" data-ck="custoPrev" value="${brl(ck.custoPrev)}"></td><td><input type="number" min="0" step="0.01" data-ck="custoReal" value="${brl(ck.custoReal)}"></td>
@@ -1522,9 +1558,9 @@ function renderChecklist(err){
   <div class="det-card">
     ${secs.map(sec => { const items = chkTpl.filter(i => i.secao === sec); if (!items.length) return '';
       return `<h4 class="ck-sec">${esc(sec)}</h4><div class="ls-wrap"><table class="ls-table ck"><thead><tr><th>#</th><th>Item</th><th style="width:150px">Feito</th><th style="width:38%">Observação</th></tr></thead><tbody>
-      ${items.map(i => { n++; const v = chkItemValue(i); return `<tr data-ck-id="${i.id}"><td class="n">${n}</td><td>${esc(i.texto)}${v.auto ? `<span class="auto-tag">Automático: atividade "${esc(v.atv)}"</span>` : ''}</td>
+      ${items.map(i => { n++; const v = chkItemValue(i); return `<tr data-ck-id="${i.id}"><td class="n">${n}</td><td>${esc(i.texto)}${v.auto ? `<span class="auto-tag">Automático: ${v.atv === 'Nº do chamado' ? 'Nº do chamado (aba Atividades)' : `atividade "${esc(v.atv)}"`}</span>` : ''}</td>
         <td>${v.auto ? `<span class="ck-badge ${v.feito==='Sim'?'sim':'nao'}">${v.feito}</span>` : `<select data-ckf="feito" class="${v.feito==='Sim'?'sim':'nao'}"><option${v.feito==='Sim'?' selected':''}>Sim</option><option${v.feito!=='Sim'?' selected':''}>Não</option></select>`}</td>
-        <td><input type="text" data-ckf="obs" value="${esc(v.obs)}" placeholder="—"></td></tr>`; }).join('')}
+        <td><input type="text" data-ckf="obs" value="${esc(v.obs)}" placeholder="—" ${v.lockObs ? 'readonly class="locked"' : ''}></td></tr>`; }).join('')}
       </tbody></table></div>`; }).join('') || '<div class="empty">Nenhum item de checklist configurado. Cadastre em Configurações > Checklist.</div>'}
     <h4 class="ck-sec">Observações para registro</h4>
     <textarea data-ck="obs" rows="3" style="width:100%;font:14px 'Barlow',sans-serif;padding:8px;border:1px solid var(--line);border-radius:5px;background:var(--field);color:var(--ink)">${esc(ck.obs||'')}</textarea>
@@ -1533,13 +1569,15 @@ function renderChecklist(err){
 }
 $('#tabChk').addEventListener('input', e => {
   const ck = currentImpl.dados.checklist, el = e.target;
-  if (el.dataset.ck){ ck[el.dataset.ck] = el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value;
+  if (el.dataset.ck){
+    if ('int' in el.dataset && el.value !== '' && !Number.isInteger(Number(el.value))) el.value = Math.round(Number(el.value));
+    ck[el.dataset.ck] = el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value;
     const custoDif = (Number(ck.custoPrev)||0) - (Number(ck.custoReal)||0), pesqDif = (Number(ck.pesqReal)||0) - (Number(ck.pesqPrev)||0);
     const cd = $('#ckCustoDif'), pd = $('#ckPesqDif');
     if (cd){ cd.textContent = custoDif.toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); cd.className = diffCls(custoDif); }
     if (pd){ pd.textContent = nfmt(pesqDif) + '%'; pd.className = diffCls(pesqDif); }
-    [['diasRemPrev','Remoto','ckRemDif'],['diasPresPrev','Presencial','ckPresDif']].forEach(([k,m,id]) => { const c2 = $('#'+id); if (!c2) return;
-      const d = (Number(ck[k])||0) - diasPorModalidade(m).real; c2.textContent = nfmt(d); c2.className = diffCls(d); });
+    [['diasRemPrev','diasRemReal','ckRemDif'],['diasPresPrev','diasPresReal','ckPresDif']].forEach(([kp,kr,id]) => { const c2 = $('#'+id); if (!c2) return;
+      const d = (parseInt(ck[kp])||0) - (parseInt(ck[kr])||0); c2.textContent = d; c2.className = diffCls(d); });
   } else if (el.dataset.ckf){
     const id = el.closest('tr').dataset.ckId; const it = ck.itens[id] ||= {};
     it[el.dataset.ckf] = el.value;
@@ -1552,6 +1590,129 @@ function renderChecklistProgressOnly(){
   const p = chkProgress(); const pc = $('#tabChk .chk-head .pcell'); if (pc) pc.outerHTML = pbar(p); updateChkPct();
 }
 
+/* ---------- produtos e atividades padrão ---------- */
+let produtos = [], prodSel = null, prodDraft = null;
+async function loadProdutos(){
+  const { data, error } = await sb.from('produtos').select('id,nome,atividades').order('nome');
+  if (error){ $('#prodList').innerHTML = `<div class="note">Produtos indisponíveis: ${esc(error.message)}</div>`; return; }
+  produtos = data; fillProdutoSelect(); if (!$('#cfgProd').hidden) renderProdList();
+}
+function setImplProduto(v){
+  const names = produtos.map(p => p.nome), s2 = $('#imProdutos');
+  s2.innerHTML = '<option value="">Selecione</option>' + names.map(n => `<option>${esc(n)}</option>`).join('')
+    + (v && !names.includes(v) ? `<option value="${esc(v)}">${esc(v)} (fora da lista)</option>` : '');
+  s2.value = v || ''; s2.dataset.prev = s2.value;
+}
+function fillProdutoSelect(){ if (currentImpl) setImplProduto($('#imProdutos').value); }
+function makeAtvFromTpl(t, i){
+  const c = catalogo.find(x => x.nome === t.nome);
+  return { id: i + 1, ordem: i + 1, nome: t.nome, catalogId: c ? c.id : null, prev: Number(t.prev) || 1, real: 0,
+    diasPrev: Number(t.diasPrev) || 0, diasReal: 0, inicio:'', fim:'', pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'' };
+}
+$('#imProdutos').addEventListener('change', async () => {
+  const sel = $('#imProdutos'), p = produtos.find(x => x.nome === sel.value);
+  if (!p || !(p.atividades||[]).length) { sel.dataset.prev = sel.value; return; }
+  const atv = currentImpl.dados.atividades ||= [];
+  let modo = 'replace';
+  if (atv.length){
+    modo = await ask('Aplicar atividades padrão?', `O produto "${p.nome}" tem ${p.atividades.length} atividades padrão. Esta implantação já tem ${atv.length} atividade(s).`,
+      [['Manter as atuais','b-ghost',null],['Adicionar as que faltam','b-save','add'],['Substituir todas','b-danger','replace']]);
+    if (!modo){ sel.dataset.prev = sel.value; return; }
+  }
+  if (modo === 'replace') currentImpl.dados.atividades = p.atividades.map(makeAtvFromTpl);
+  else {
+    const have = new Set(atv.map(a => (a.nome||'').trim().toLowerCase()));
+    let maxId = atv.reduce((m,a) => Math.max(m, Number(a.id)||0), 0);
+    p.atividades.filter(t => !have.has(t.nome.trim().toLowerCase())).forEach(t => { const a = makeAtvFromTpl(t, 0); a.id = ++maxId; a.ordem = atv.length + 1; atv.push(a); });
+  }
+  sel.dataset.prev = sel.value;
+  renderAtvTable(); renderGroupsImpl(); renderDatalist(); implChanged(); flash('Atividades padrão aplicadas.');
+});
+
+function renderProdList(){
+  $('#prodList').innerHTML = produtos.length ? produtos.map(p => `<div class="prod-item" data-pid="${p.id}">
+    <button type="button" class="sel${prodSel===p.id?' active':''}" data-psel>${esc(p.nome)}<small>${(p.atividades||[]).length} ativ.</small></button>
+    <button type="button" class="b-del" data-pdel aria-label="Remover produto" title="Remover produto">×</button></div>`).join('')
+    : '<div class="empty" style="padding:16px">Nenhum produto cadastrado.</div>';
+}
+$('#prodList').addEventListener('click', async e => {
+  const row = e.target.closest('[data-pid]'); if (!row) return;
+  const p = produtos.find(x => String(x.id) === row.dataset.pid);
+  if (e.target.closest('[data-psel]')){ prodSel = p.id; prodDraft = JSON.parse(JSON.stringify(p)); renderProdList(); renderProdEditor(); return; }
+  if (e.target.closest('[data-pdel]')){
+    const v = await ask('Remover produto?', `"${p.nome}" deixará de aparecer para seleção. As implantações que já usam esse produto não são alteradas.`, [['Cancelar','b-ghost',null],['Remover','b-danger','ok']]);
+    if (!v) return;
+    const { error } = await sb.from('produtos').delete().eq('id', p.id);
+    if (error){ flash('Erro: ' + error.message); return; }
+    produtos = produtos.filter(x => x !== p); if (prodSel === p.id){ prodSel = null; prodDraft = null; renderProdEditor(); } renderProdList();
+  }
+});
+async function addProduto(){
+  const nome = $('#prodNew').value.trim(); if (!nome) return;
+  if (produtos.some(p => p.nome.toLowerCase() === nome.toLowerCase())){ flash('Esse produto já está cadastrado.'); return; }
+  const { data, error } = await sb.from('produtos').insert({ nome, atividades: [] }).select('id').single();
+  if (error){ flash('Erro: ' + error.message); return; }
+  const p = { id:data.id, nome, atividades:[] }; produtos.push(p); produtos.sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
+  $('#prodNew').value = ''; prodSel = p.id; prodDraft = JSON.parse(JSON.stringify(p)); renderProdList(); renderProdEditor();
+}
+$('#btnAddProd').addEventListener('click', addProduto);
+$('#prodNew').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); addProduto(); } });
+
+function renderProdEditor(){
+  const box = $('#prodEditor');
+  if (!prodDraft){ box.innerHTML = '<div class="empty">Selecione um produto para editar as atividades padrão.</div>'; return; }
+  const list = prodDraft.atividades, n = list.length;
+  const opt = (opts, v) => opts.map(o => `<option${o===v?' selected':''}>${o}</option>`).join('');
+  box.innerHTML = `<label class="f" style="margin-bottom:12px">Nome do produto<input type="text" id="pdNome" value="${esc(prodDraft.nome)}"></label>
+    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Dias prev.</span><span>Modalidade</span><span></span></div>
+    ${list.map((t,i) => `<div class="pa-row" data-i="${i}">
+      <span class="ord" style="white-space:nowrap">${i+1}<span class="ordb"><button type="button" data-pmv="-1" ${i===0?'disabled':''} aria-label="Subir">▲</button><button type="button" data-pmv="1" ${i===n-1?'disabled':''} aria-label="Descer">▼</button></span></span>
+      <input type="text" list="atvSug" data-pf="nome" value="${esc(t.nome)}" placeholder="Atividade do catálogo">
+      <select data-pf="resp">${opt(RESP_OPTS, t.resp || 'Cittati')}</select>
+      <input type="number" min="0" step="1" data-pf="prev" value="${t.prev ?? 1}">
+      <input type="number" min="0" step="0.5" data-pf="diasPrev" value="${t.diasPrev ?? 0}">
+      <select data-pf="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'], t.modalidade)}</select>
+      <button type="button" class="b-del" data-prm aria-label="Remover atividade" title="Remover">×</button></div>`).join('')}
+    <button type="button" class="b-add" id="btnPdAdd">+ Adicionar atividade</button>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
+      <button type="button" class="b-ghost" id="btnPdImport" style="border:1px solid var(--line)">Copiar de uma implantação</button>
+      <button type="button" class="b-save" id="btnPdSave">Salvar produto</button></div>`;
+  renderDatalist();
+}
+$('#prodEditor').addEventListener('input', e => {
+  if (e.target.id === 'pdNome'){ prodDraft.nome = e.target.value; return; }
+  const f = e.target.dataset.pf; if (!f) return;
+  const t = prodDraft.atividades[e.target.closest('[data-i]').dataset.i];
+  t[f] = (f === 'prev' || f === 'diasPrev') ? Number(e.target.value) || 0 : e.target.value;
+});
+$('#prodEditor').addEventListener('click', async e => {
+  const L = prodDraft?.atividades;
+  const mv = e.target.closest('[data-pmv]');
+  if (mv){ const i = Number(mv.closest('[data-i]').dataset.i), j = i + Number(mv.dataset.pmv); [L[i], L[j]] = [L[j], L[i]]; renderProdEditor(); return; }
+  if (e.target.closest('[data-prm]')){ L.splice(Number(e.target.closest('[data-i]').dataset.i), 1); renderProdEditor(); return; }
+  if (e.target.id === 'btnPdAdd'){ L.push({ nome:'', resp:'Cittati', prev:1, diasPrev:0, modalidade:'' }); renderProdEditor();
+    const rows = $('#prodEditor').querySelectorAll('[data-pf=nome]'); rows[rows.length-1].focus(); return; }
+  if (e.target.id === 'btnPdImport'){
+    if (!impls.length) await loadImpl();
+    const opts = impls.filter(r => (r.dados?.atividades||[]).length);
+    if (!opts.length){ flash('Nenhuma implantação com atividades para copiar.'); return; }
+    const v = await ask('Copiar atividades de uma implantação', 'Escolha a implantação. As atividades dela, na ordem atual, substituem a lista deste produto (você ainda precisa clicar em Salvar produto).',
+      [['Cancelar','b-ghost',null]].concat(opts.slice(0,6).map(r => [r.cliente || 'Sem nome','b-save', r.id])));
+    if (!v) return;
+    const r = impls.find(x => x.id === v);
+    prodDraft.atividades = [...r.dados.atividades].sort((a,b) => (a.ordem||0)-(b.ordem||0)).map(a => ({ nome:a.nome, resp:a.resp || 'Cittati', prev:Number(a.prev)||1, diasPrev:Number(a.diasPrev)||0, modalidade:a.modalidade || '' }));
+    renderProdEditor(); return;
+  }
+  if (e.target.id === 'btnPdSave'){
+    const nome = prodDraft.nome.trim(); if (!nome){ flash('Informe o nome do produto.'); return; }
+    const atividades = prodDraft.atividades.filter(t => (t.nome||'').trim()).map(t => ({ ...t, nome: t.nome.trim() }));
+    const { error } = await sb.from('produtos').update({ nome, atividades }).eq('id', prodDraft.id);
+    if (error){ flash('Erro: ' + error.message); return; }
+    const p = produtos.find(x => x.id === prodDraft.id); p.nome = nome; p.atividades = atividades; prodDraft = JSON.parse(JSON.stringify(p));
+    renderProdList(); renderProdEditor(); fillProdutoSelect(); flash('Produto salvo.');
+  }
+});
+
 /* ---------- configurações: itens do checklist ---------- */
 function renderChkCfg(){
   const box = $('#chkCfgList');
@@ -1563,7 +1724,7 @@ function renderChkCfg(){
       <input type="number" min="1" data-cc="ordem" value="${i.ordem}" aria-label="Ordem">
       <select data-cc="secao" aria-label="Seção">${secs.map(x => `<option${x===i.secao?' selected':''}>${esc(x)}</option>`).join('')}</select>
       <input type="text" data-cc="texto" value="${esc(i.texto)}" aria-label="Texto do item">
-      <select data-cc="atividade" aria-label="Atividade vinculada"><option value="">Sem vínculo (manual)</option>${atvNames.concat(i.atividade && !atvNames.includes(i.atividade) ? [i.atividade] : []).map(x => `<option${x===i.atividade?' selected':''}>${esc(x)}</option>`).join('')}</select>
+      <select data-cc="atividade" aria-label="Atividade vinculada"><option value="">Sem vínculo (manual)</option><option value="__chamado"${i.atividade==='__chamado'?' selected':''}>Nº do chamado (aba Atividades)</option>${atvNames.concat(i.atividade && i.atividade !== '__chamado' && !atvNames.includes(i.atividade) ? [i.atividade] : []).map(x => `<option${x===i.atividade?' selected':''}>${esc(x)}</option>`).join('')}</select>
       <button type="button" class="b-del" data-ccdel aria-label="Remover item" title="Remover item">×</button></div>`).join('');
 }
 $('#chkCfgList').addEventListener('change', async e => {
@@ -1593,6 +1754,7 @@ $('#btnAddChkItem').addEventListener('click', async () => {
 
 function fileSlug(t){ return (t || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,''); }
 
+$('#imChamado').addEventListener('input', () => { currentImpl.dados.chamado = $('#imChamado').value.trim(); implChanged(); });
 $('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação'; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist();
   { const sm = SIST_MAP[$('#imProduto').value]; const boxes = [...form.querySelectorAll('input[name=sistemas]')]; if (sm && !boxes.some(b => b.checked)){ const b = boxes.find(x => x.value === sm); if (b) b.checked = true; } }
   applyEntregaLocks(); refresh(); syncEntrega(); implChanged(); });
@@ -1652,7 +1814,7 @@ if (sb){
   sb.auth.onAuthStateChange((event, session) => {
     if (session?.user){
       $('#userEmail').textContent = session.user.email;
-      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas();
+      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadProdutos(); loadCatalog();
       if (document.body.dataset.screen === 'login'){ show('impl'); loadImpl(); }
     } else {
       currentId = null; records = []; isAdmin = false; myId = null; document.body.classList.remove('is-admin'); closeForm(); updateDeleteBtn(); fillState({}); markClean(); refresh(); impls = []; currentImpl = null;
