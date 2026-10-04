@@ -1885,7 +1885,8 @@ function statusData(r){
     prog: implStats(atv).prog, total: atv.length
   };
 }
-const dBR = v => v ? fmtDate(String(v).slice(0,10)) : '—';
+// datas puras (AAAA-MM-DD) ficam como estão; data e hora do banco (UTC) são convertidas para o horário local
+const dBR = v => { if (!v) return '—'; const t = String(v); return t.length <= 10 ? fmtDate(t) : new Date(t).toLocaleDateString('pt-BR'); };
 function stShowList(){ $('#stListWrap').hidden = false; $('#stDetail').hidden = true; stCurrent = null; }
 function renderStCards(){
   const q = $('#stSearch').value.trim().toLowerCase(), f = $('#stFilter').value;
