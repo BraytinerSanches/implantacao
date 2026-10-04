@@ -1314,7 +1314,11 @@ $('#atvBody').addEventListener('input', e => {
   if (el.tagName === 'TEXTAREA') grow(el);
   const a = atvById(el.closest('tr').dataset.id); if (!a) return;
   if (f === 'prev' || f === 'real'){ a[f] = Math.max(0, parseInt(el.value,10) || 0); a.pct = a.prev > 0 ? Math.round(a.real / a.prev * 100) : 0;
-    el.closest('tr').querySelector('.pc').innerHTML = pbar(a.pct); renderGroupsImpl(); }
+    el.closest('tr').querySelector('.pc').innerHTML = pbar(a.pct);
+    // status acompanha o realizado: 100% conclui, iniciado sai de Aguardando, voltar abaixo de 100% reabre
+    const novo = a.pct >= 100 ? 'Concluído' : (a.status === 'Concluído' ? 'Em andamento' : (a.pct > 0 && a.status === 'Aguardando' ? 'Em andamento' : a.status));
+    if (novo !== a.status){ a.status = novo; const ss = el.closest('tr').querySelector('[data-f=status]'); ss.value = novo; ss.className = STATUS_SEL[novo] || 's-g'; }
+    renderGroupsImpl(); }
   else if (f === 'diasPrev' || f === 'diasReal') a[f] = Math.max(0, parseFloat(String(el.value).replace(',','.')) || 0);
   else a[f] = el.value;
   if (f === 'status'){ el.className = STATUS_SEL[el.value] || 's-g'; renderGroupsImpl(); }
@@ -1873,15 +1877,18 @@ const ST_CLS = {'Não iniciado':'s-nao','Em andamento':'s-and','Concluído':'s-c
 function statusData(r){
   const d = r.dados || {}, c = d.cliente || {}, e = d.entrega || {}, st = d.status || {};
   const atv = [...(d.atividades||[])].sort((a,b) => (a.ordem||0) - (b.ordem||0));
-  const concl = atv.filter(a => a.status === 'Concluído');
+  const feita = a => a.status === 'Concluído' || Number(a.pct) >= 100;
+  const concl = atv.filter(feita);
   const started = atv.some(a => a.status !== 'Aguardando' || Number(a.pct) > 0);
-  const status = !atv.length || !started ? 'Não iniciado' : concl.length === atv.length ? 'Concluído' : 'Em andamento';
+  // a implantação é encerrada com a assinatura do TEA (ou quando todas as atividades terminam)
+  const tea = atv.find(a => /\bTEA\b/i.test(a.nome || ''));
+  const status = !atv.length || !started ? 'Não iniciado' : ((tea && feita(tea)) || concl.length === atv.length) ? 'Concluído' : 'Em andamento';
   const aten = atv.filter(a => a.status === 'Atenção').map(a => a.nome + (a.obs ? ': ' + a.obs : ''));
   if ((st.atencao||'').trim()) aten.push(st.atencao.trim());
   return {
     nome: r.cliente || c.nome || 'Sem nome', coord: c.coordenador || '', analista: c.cittati || '', inicio: c.inicio || '', fim: c.fim || '',
     atualizado: r.updated_at, status, servico: (c.produtos||[]).join(' + ') || c.produto || '', equip: (e.hardware||[]).join(', '),
-    veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', aten, prox: atv.filter(a => a.status !== 'Concluído'), fin: concl,
+    veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', aten, prox: atv.filter(a => !feita(a)), fin: concl,
     prog: implStats(atv).prog, total: atv.length
   };
 }
