@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --bg:#EEF0F1; --panel:#FFFFFF; --ink:#1E272C; --muted:#5E6A71; --line:#D3D8DB;
@@ -305,6 +306,15 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 .cro-leg{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin:8px 0 0;flex-wrap:wrap}
 .cro-leg i{display:inline-block;width:18px;height:10px;vertical-align:middle;margin-right:5px;border-radius:2px}
 .catrow.wide{grid-template-columns:minmax(200px,1fr) 2fr 34px}
+.os-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
+.os-line span{color:var(--muted)}
+.os-line button{padding:5px 10px;font-size:13px}
+.os-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media (max-width:700px){.os-grid{grid-template-columns:1fr}}
+.os-sum{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:14px;font-size:13.5px}
+.os-sum dt{color:var(--muted);font-size:12px;margin-top:6px}
+.os-sum dd{margin:0;font-weight:600}
+.os-warn{background:#FFF1E0;color:#7A3D00;border-radius:6px;padding:8px 12px;font-size:13px;margin-top:10px}
 .chamado-card{display:flex;gap:14px;flex-wrap:wrap;padding:12px 16px}
 .prod-layout{display:grid;grid-template-columns:280px 1fr;gap:20px}
 @media (max-width:900px){.prod-layout{grid-template-columns:1fr}}
@@ -457,7 +467,9 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div class="ls-bar">
     <h2>Implantações</h2>
     <input type="text" id="implSearch" placeholder="Buscar por cliente ou analista" aria-label="Buscar implantação">
+    <button class="b-alt" id="btnOsImpl" style="color:var(--ink)">Criar implantação completa</button>
     <button class="b-main" id="btnNewImpl">+ Nova implantação</button>
+    <input type="file" id="osFileInput" accept=".xlsx" hidden>
   </div>
   <div id="implBody"></div>
 </section>
@@ -473,6 +485,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button class="b-alt" id="btnImplImg" style="color:var(--ink)">Exportar imagem</button>
     <button class="b-alt" id="btnImplPdf" style="color:var(--ink)">Exportar PDF</button>
     <button class="b-save" id="btnImplSave">Salvar</button>
+    <button class="b-main" id="btnAllFiles">Baixar todos os arquivos</button>
     <button class="b-danger" id="btnImplDelete" hidden>Excluir</button>
   </div>
   <div id="implCapture">
@@ -489,6 +502,10 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <label class="f">Data de início<input type="date" id="imInicio"></label>
       <label class="f">Data de fim<input type="date" id="imFim"></label>
     </div>
+    <div class="os-line"><span>Arquivo da OS:</span> <b id="osName">nenhum arquivo anexado</b>
+      <button type="button" class="b-alt" id="btnOsDown" style="color:var(--ink)" hidden>Baixar OS</button>
+      <button type="button" class="b-alt" id="btnOsUp" style="color:var(--ink)">Anexar OS</button>
+      <input type="file" id="osAttachInput" accept=".xlsx,.xls,.pdf" hidden></div>
     <div class="msg-err" id="implMsg" role="status"></div>
   </div>
   </div>
@@ -631,6 +648,16 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   </div>
 </section>
 <div id="stRender" aria-hidden="true"></div>
+<div class="modal" id="osModal" hidden role="dialog" aria-modal="true" aria-labelledby="osTitle">
+  <div class="box" style="max-width:860px;max-height:90vh;overflow:auto">
+    <h2 id="osTitle">Criar implantação completa</h2>
+    <p id="osFileLabel" style="margin:0 0 12px"></p>
+    <div id="osBody"></div>
+    <div class="msg-err" id="osErr" role="alert"></div>
+    <div class="mb"><button type="button" class="b-ghost" id="osCancel">Cancelar</button><button type="button" class="b-main" id="osCreate">Criar implantação</button></div>
+  </div>
+</div>
+<div class="modal" id="busyModal" hidden role="status"><div class="box" style="max-width:380px;text-align:center"><h2 id="busyTitle">Gerando arquivos…</h2><p id="busyText" style="margin:0">Aguarde, isso leva alguns segundos.</p></div></div>
 
 <section id="configView">
   <div class="ls-bar"><h2>Configurações</h2></div>
@@ -1267,7 +1294,7 @@ function openImpl(id){
   $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
   $('#imProduto').value = c.produto || '';
   currentImpl.dados.checklist ||= { itens:{} };
-  entLoaded = false; loadEntregaIntoForm(); entLoaded = true;
+  entLoaded = false; loadEntregaIntoForm(); entLoaded = true; renderOsLine();
   implTab('atv'); loadChecklistTpl();
   $('#implMsg').textContent = ''; $('#implAuto').textContent = ''; clearTimeout(implTimer); markClean(); renderImplDet(); show('implDet');
   loadCatalog();
@@ -1535,6 +1562,9 @@ $('#btnImplImg').addEventListener('click', async () => {
 $('#btnImplPdf').addEventListener('click', async () => {
   if (!$('#tabEnt').hidden) return entregaExport('pdf');
   const c = await captureImpl();
+  await save(implFileBase() + '.pdf', canvasToPdfBlob(c)); flash('PDF exportado.');
+});
+function canvasToPdfBlob(c){
   const { jsPDF } = window.jspdf;
   const land = c.width > c.height;
   const pdf = new jsPDF({ unit:'mm', format:'a4', orientation: land ? 'landscape' : 'portrait' });
@@ -1546,8 +1576,8 @@ $('#btnImplPdf').addEventListener('click', async () => {
     if (i) pdf.addPage();
     pdf.addImage(pc.toDataURL('image/jpeg', .92), 'JPEG', m, m, w, sh / pxPerMm);
   }
-  await save(implFileBase() + '.pdf', pdf.output('blob')); flash('PDF exportado.');
-});
+  return pdf.output('blob');
+}
 
 /* ---------- entrega para suporte dentro da implantação ---------- */
 const SIST_MAP = { 'Flits':'Flits', 'ICS':'ICS', 'Gool':'GOOL System' };
@@ -1580,6 +1610,11 @@ async function entregaExport(kind){
   try {
     const c = await capture();
     if (kind === 'png'){ const blob = await new Promise(r => c.toBlob(r, 'image/png')); await save(fileBase()+'.png', blob); flash('Imagem exportada.'); return; }
+    await save(fileBase()+'.pdf', entregaCanvasToPdf(c)); flash('PDF exportado.');
+  } catch(err){ console.error(err); flash('Erro ao gerar o arquivo.'); }
+}
+function entregaCanvasToPdf(c){
+  {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
     const pw = 210, ph = 297, pxPerMm = c.width / pw, pagePx = Math.floor(ph * pxPerMm);
@@ -1588,8 +1623,8 @@ async function entregaExport(kind){
       const sh = Math.min(pagePx, c.height - y), pc = document.createElement('canvas'); pc.width = c.width; pc.height = sh;
       const ctx = pc.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,pc.width,sh); ctx.drawImage(c, 0, y, c.width, sh, 0, 0, c.width, sh);
       if (i) pdf.addPage(); pdf.addImage(pc.toDataURL('image/jpeg',0.95), 'JPEG', 0, 0, pw, sh/pxPerMm); }
-    await save(fileBase()+'.pdf', pdf.output('blob')); flash('PDF exportado.');
-  } catch(err){ console.error(err); flash('Erro ao gerar o arquivo.'); }
+    return pdf.output('blob');
+  }
 }
 
 /* ---------- cronograma ---------- */
@@ -1644,6 +1679,9 @@ $('#tabCro').addEventListener('input', e => {
 });
 $('#btnCroXlsx').addEventListener('click', async () => {
   if (!window.ExcelJS){ flash('Biblioteca do Excel não carregou. Recarregue a página.'); return; }
+  await save(`Cronograma_${fileSlug(readImplHeader().nome)}.xlsx`, await croXlsxBlob()); flash('Excel exportado.');
+});
+async function croXlsxBlob(){
   const { h, atv, weeks } = croData();
   const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Cronograma de Implantação', { views:[{ showGridLines:false }], pageSetup:{ orientation:'landscape', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0 } });
   const thin = { style:'thin', color:{ argb:'FF9DB3C6' } }, box = { top:thin, left:thin, bottom:thin, right:thin };
@@ -1670,8 +1708,192 @@ $('#btnCroXlsx').addEventListener('click', async () => {
     row.height = Math.max(20, Math.ceil((a.descricao || '').length / 70) * 15);
   });
   const buf = await wb.xlsx.writeBuffer();
-  await save(`Cronograma_${fileSlug(h.nome)}.xlsx`, new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  flash('Excel exportado.');
+  return new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+/* ---------- OS: leitura do arquivo ---------- */
+const norm = t => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+function cellText(c){ const v = c.value; if (v == null) return ''; if (typeof v === 'object'){ if (v.richText) return v.richText.map(x => x.text).join(''); if (v.text) return String(v.text); if (v.result != null) return String(v.result); if (v instanceof Date) return v.toISOString().slice(0,10); } return String(v).trim(); }
+async function parseOS(file){
+  if (!window.ExcelJS) throw new Error('Biblioteca do Excel não carregou. Recarregue a página.');
+  const wb = new ExcelJS.Workbook();
+  try { await wb.xlsx.load(await file.arrayBuffer()); } catch { throw new Error('Não foi possível ler o arquivo. Confira se é uma planilha .xlsx.'); }
+  const ws = wb.worksheets.find(w => /^os\b/i.test(w.name.trim())) || wb.worksheets[0];
+  const grid = []; ws.eachRow({ includeEmpty:false }, (row, r) => { row.eachCell({ includeEmpty:false }, (c, col) => { const t = cellText(c); if (t) grid.push({ r, col, t, n: norm(t) }); }); });
+  if (!grid.some(g => g.n.includes('termo de aquisicao'))) throw new Error('Este arquivo não parece ser uma OS (não encontrei o "Termo de Aquisição de Serviços e Acessórios").');
+  const rowOf = rx => (grid.find(g => rx.test(g.n)) || {}).r;
+  const right = (cell) => { const seq = grid.filter(g => g.r === cell.r && g.col > cell.col).sort((a,b) => a.col - b.col); const v = seq.find(g => g.t !== cell.t); return v ? v.t.trim() : ''; };
+  const find = (rx, from = 0, to = 1e9) => grid.find(g => g.r >= from && g.r <= to && rx.test(g.n));
+  const val = (rx, from, to) => { const c = find(rx, from, to); return c ? right(c) : ''; };
+  const isMark = n => /^\[\s*(sim|nao|x)?\s*\]$/.test(n);
+  const marked = (from, to) => { const out = []; grid.filter(g => g.r > from && g.r < to && !isMark(g.n)).forEach(g => {
+      const nx = grid.filter(x => x.r === g.r && x.col > g.col).sort((a,b) => a.col - b.col)[0]; if (nx && isMark(nx.n) && nx.n.includes('sim')) out.push(g.t.trim()); }); return out; };
+  const rCli = rowOf(/^dados do cliente/), rLeg = rowOf(/responsavel legal$/) || rowOf(/dados cadastrais - responsavel legal/), rProj = rowOf(/responsaveis pelo projeto/);
+  const rTipo = rowOf(/^tipo de projeto/), rPac = rowOf(/^pacote de servico/), rProd = rowOf(/^produto ou servico contratado/), rSens = rowOf(/^tipo de sensor/), rQtd = rowOf(/equipamentos \(quantidade\)/);
+  const nome = val(/sugestao nome sistema/) || val(/^razao social/);
+  if (!nome) throw new Error('Não encontrei a razão social nem a sugestão de nome do sistema na OS.');
+  const contato = (rx, cargoPadrao) => { const c = find(rx); if (!c) return null;
+    const nm = right(c), tel = val(/^telefone/, c.r + 1, c.r + 2), cel = val(/^celular/, c.r + 1, c.r + 2), mail = val(/^e-?mail/, c.r + 1, c.r + 3);
+    const telEhNumero = /\d{4}/.test(tel);
+    return nm ? { cargo: !telEhNumero && tel ? tel : cargoPadrao, nome: nm.trim(), tel: cel || (telEhNumero ? tel : ''), mail } : null; };
+  const resp1 = contato(/responsavel tecnico do projeto 1/, 'Responsável técnico');
+  const resp2 = contato(/responsavel tecnico do projeto 2/, 'Responsável técnico');
+  const legalC = find(/^responsavel legal:?$/);
+  const legal = legalC ? { cargo: val(/^profissao/, legalC.r, legalC.r + 1) || 'Responsável legal', nome: right(legalC), tel: val(/^telefone/, legalC.r + 1, legalC.r + 2), mail: val(/^e-?mail/, legalC.r + 1, legalC.r + 2) } : null;
+  const finC = find(/^contato financeiro/);
+  const fin = finC ? { cargo:'Financeiro', nome: right(finC), tel: val(/^celular/, finC.r, finC.r + 1) || val(/^telefone/, finC.r, finC.r + 1), mail: val(/^e-?mail/, finC.r, finC.r + 2) } : null;
+  const qtd = rx => { const c = find(rx, rQtd || 0); if (!c) return 0; const left = grid.find(g => g.r === c.r && g.col < c.col); return Number(left?.t) || 0; };
+  // checklist comercial (outra aba)
+  const ck = wb.worksheets.find(w => /checklist/i.test(w.name)); const contratos = [];
+  if (ck){ const cg = []; ck.eachRow({ includeEmpty:false }, (row, r) => row.eachCell({ includeEmpty:false }, (c, col) => { const t = cellText(c); if (t) cg.push({ r, col, t, n:norm(t) }); }));
+    const a = cg.find(g => g.n.startsWith('quais os tipo')), b = cg.find(g => g.n.startsWith('tipo de viagens'));
+    if (a) cg.filter(g => g.r >= a.r && (!b || g.r < b.r) && g.col === 2).forEach(g => { const m = cg.find(x => x.r === g.r && x.col === 3); if (m && m.n.includes('sim')) contratos.push(g.t.trim()); }); }
+  return {
+    nome: nome.trim(), email: val(/^e-?mail$/, rCli || 0, (rLeg || 1e9) - 1),
+    contatos: [resp1 && { ...resp1, cargo: resp1.cargo || 'Responsável técnico' }, resp2, legal, fin].filter(Boolean)
+      .filter((c, i, arr) => arr.findIndex(x => norm(x.nome) === norm(c.nome)) === i),
+    respTec: resp1?.nome || '',
+    pacote: (marked(rPac || 0, rProd || 1e9).find(x => /^pacote \d/i.test(x)) || ''),
+    produtos: marked(rProd || 0, rSens || 1e9), sensores: marked(rSens || 0, rQtd || 1e9),
+    avls: qtd(/^rastreador \(avl\)$/), contratos, tipo: marked(rTipo || 0, rPac || 1e9)
+  };
+}
+function osToEntrega(os, head){
+  const P = os.produtos.map(norm), S = os.sensores.map(norm), C = os.contratos.map(norm);
+  const sistemas = [], apps = [], operacional = [], hardware = [];
+  if (P.some(x => /fretamento|ics/.test(x))) sistemas.push('ICS');
+  if (P.some(x => /bus ?2/.test(x))) apps.push('Bus 2');
+  if (P.some(x => /monitri/.test(x)) || C.some(x => /monitri/.test(x))) operacional.push('Monitriip');
+  if (C.some(x => /escolar/.test(x))) operacional.push('Escolar');
+  if (C.some(x => /usina/.test(x))) operacional.push('Usina');
+  if (C.some(x => /fretamento/.test(x)) || P.some(x => /fretamento/.test(x))) operacional.push('Fretamento');
+  if (S.some(x => /aut ?18/.test(x))) hardware.push('AUT18');
+  if (S.some(x => /suntech/.test(x))) hardware.push('Suntech');
+  if (S.some(x => /rfid/.test(x))) hardware.push('Leitor RFID');
+  return { empresa: head.nome, inicio: head.inicio, fim: head.fim, respTec: os.respTec, emailCli: os.email,
+    escopo: os.produtos.concat(os.sensores).join(' + '), sistemas, apps, operacional: [...new Set(operacional)], hardware,
+    avls: os.avls || '', frotaTot: os.avls || '', pacote: /pacote \d/i.test(os.pacote) ? 'Pacote ' + os.pacote.match(/\d/)[0] : '',
+    contatos: os.contatos.map(c => ({ cargo:c.cargo, nome:c.nome, tel:c.tel, mail:c.mail })) };
+}
+function suggestProduto(os){
+  const txt = norm(os.produtos.concat(os.sensores).join(' '));
+  let best = null, score = 0;
+  produtos.forEach(p => { const toks = norm(p.nome).split(/[\s+\/,-]+/).filter(t => t.length > 1); const sc = toks.filter(t => txt.includes(t)).length / (toks.length || 1);
+    if (sc > score){ score = sc; best = p.nome; } });
+  return score >= 0.5 ? best : '';
+}
+
+/* ---------- criar implantação completa ---------- */
+let osPending = null;
+$('#btnOsImpl').addEventListener('click', () => { $('#osFileInput').value = ''; $('#osFileInput').click(); });
+$('#osFileInput').addEventListener('change', async () => {
+  const file = $('#osFileInput').files[0]; if (!file) return;
+  let os; try { os = await parseOS(file); } catch(e){ await ask('Arquivo não reconhecido', e.message, [['Entendi','b-save',1]]); return; }
+  if (!produtos.length) await loadProdutos();
+  if (!analistas.length) await loadAnalistas();
+  osPending = { file, os };
+  const sug = suggestProduto(os), opt = (arr, v) => arr.map(x => `<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
+  const dup = impls.find(r => norm(r.cliente) === norm(os.nome));
+  $('#osFileLabel').innerHTML = `Arquivo validado: <b>${esc(file.name)}</b>. Confira os dados e complete o que a OS não informa.`;
+  $('#osErr').textContent = '';
+  $('#osBody').innerHTML = `<div class="os-grid">
+      <label class="f">Cliente<input type="text" id="osNome" value="${esc(os.nome)}"></label>
+      <label class="f">Responsável do cliente<input type="text" id="osResp" value="${esc(os.respTec)}"></label>
+      <label class="f">Analista Cittati<select id="osAna"><option value="">Selecione</option>${opt(analistas.map(a => a.nome), '')}</select></label>
+      <label class="f">Coordenador<input type="text" id="osCoord"></label>
+      <label class="f">Produto contratado (atividades padrão)<select id="osProd"><option value="">Nenhum (sem atividades padrão)</option>${opt(produtos.map(p => p.nome), sug)}</select></label>
+      <label class="f">Produto implantado<select id="osProdImpl"><option value="">Selecione</option>${opt(PRODUTOS, os.produtos.some(x => /fretamento|ics/i.test(x)) ? 'ICS' : '')}</select></label>
+      <label class="f">Data de início<input type="date" id="osIni"></label>
+      <label class="f">Data de fim<input type="date" id="osFim"></label>
+    </div>
+    <dl class="os-sum">
+      <dt>Produtos e serviços marcados na OS</dt><dd>${esc(os.produtos.join(', ') || '—')}</dd>
+      <dt>Equipamentos</dt><dd>${esc(os.sensores.join(', ') || '—')} · ${os.avls || 0} rastreador(es)</dd>
+      <dt>Pacote</dt><dd>${esc(os.pacote || '—')}</dd>
+      <dt>Contatos que irão para a Entrega para Suporte</dt><dd>${os.contatos.map(c => esc(`${c.nome} (${c.cargo})`)).join('; ') || '—'}</dd>
+      <dt>Tipos de contrato (checklist comercial)</dt><dd>${esc(os.contratos.join(', ') || '—')}</dd>
+    </dl>
+    ${sug ? '' : '<div class="os-warn">Não encontrei um produto cadastrado parecido com o da OS. Escolha um na lista para criar as atividades padrão, ou crie depois.</div>'}
+    ${dup ? `<div class="os-warn">Já existe uma implantação chamada "${esc(dup.cliente)}". Se continuar, será criada outra.</div>` : ''}`;
+  $('#osModal').hidden = false; $('#osNome').focus();
+});
+$('#osCancel').addEventListener('click', () => { $('#osModal').hidden = true; osPending = null; });
+$('#osCreate').addEventListener('click', async () => {
+  if (!osPending) return;
+  const nome = $('#osNome').value.trim(); if (!nome){ $('#osErr').textContent = 'Informe o nome do cliente.'; return; }
+  const prodName = $('#osProd').value, p = produtos.find(x => x.nome === prodName);
+  if (p && !catalogo.length) await loadCatalog();
+  const head = { nome, cittati: $('#osAna').value, cliente: $('#osResp').value.trim(), produtos: prodName ? [prodName] : [],
+    coordenador: $('#osCoord').value.trim(), produto: $('#osProdImpl').value, inicio: $('#osIni').value, fim: $('#osFim').value };
+  const dados = { cliente: head, atividades: p ? (p.atividades||[]).map(makeAtvFromTpl) : [], checklist: { itens:{} }, entrega: osToEntrega(osPending.os, head) };
+  $('#osCreate').disabled = true; $('#osErr').textContent = '';
+  try {
+    const ins = await sb.from('implantacoes').insert({ cliente: nome, dados }).select('id').single();
+    if (ins.error) throw ins.error;
+    const id = ins.data.id, ext = (osPending.file.name.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0];
+    const up = await sb.storage.from('arquivos').upload(`${id}/os${ext}`, osPending.file, { upsert:true });
+    if (!up.error){ dados.os = { path:`${id}/os${ext}`, nome: osPending.file.name }; await sb.from('implantacoes').update({ dados }).eq('id', id); }
+    $('#osModal').hidden = true; osPending = null;
+    await loadImpl(); openImpl(id);
+    flash(up.error ? 'Implantação criada, mas a OS não foi anexada: ' + up.error.message : 'Implantação criada a partir da OS.');
+  } catch(e){ $('#osErr').textContent = 'Não foi possível criar: ' + (e.message || e); }
+  finally { $('#osCreate').disabled = false; }
+});
+
+/* ---------- arquivo da OS dentro da implantação ---------- */
+function renderOsLine(){
+  const os = currentImpl?.dados.os;
+  $('#osName').textContent = os ? os.nome : 'nenhum arquivo anexado';
+  $('#btnOsDown').hidden = !os; $('#btnOsUp').textContent = os ? 'Substituir OS' : 'Anexar OS';
+}
+async function osBlob(){
+  const os = currentImpl?.dados.os; if (!os) return null;
+  const { data, error } = await sb.storage.from('arquivos').download(os.path);
+  if (error) throw error; return data;
+}
+$('#btnOsDown').addEventListener('click', async () => {
+  try { const b = await osBlob(); const ext = (currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0];
+    await save(`02_OS_${fileSlug(readImplHeader().nome)}${ext}`, b); } catch(e){ flash('Não foi possível baixar a OS: ' + (e.message || e)); }
+});
+$('#btnOsUp').addEventListener('click', () => {
+  if (!currentImpl.id){ flash('Salve a implantação antes de anexar a OS.'); return; }
+  $('#osAttachInput').value = ''; $('#osAttachInput').click();
+});
+$('#osAttachInput').addEventListener('change', async () => {
+  const f = $('#osAttachInput').files[0]; if (!f) return;
+  const ext = (f.name.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0], path = `${currentImpl.id}/os${ext}`;
+  const old = currentImpl.dados.os?.path;
+  const { error } = await sb.storage.from('arquivos').upload(path, f, { upsert:true });
+  if (error){ flash('Erro ao anexar: ' + error.message); return; }
+  if (old && old !== path) await sb.storage.from('arquivos').remove([old]);
+  currentImpl.dados.os = { path, nome: f.name }; renderOsLine(); implChanged(); flash('OS anexada.');
+});
+
+/* ---------- baixar todos os arquivos ---------- */
+$('#btnAllFiles').addEventListener('click', async () => {
+  if (!window.JSZip){ flash('Biblioteca de compactação não carregou. Recarregue a página.'); return; }
+  const tabAtual = document.querySelector('#implTabs button.active')?.dataset.tab || 'atv';
+  const slug = fileSlug(readImplHeader().nome), zip = new JSZip(), falhas = [];
+  $('#busyModal').hidden = false;
+  const step = t => $('#busyText').textContent = t;
+  try {
+    step('Arquivo da OS…');
+    try { const b = await osBlob(); if (b) zip.file(`02_OS_${slug}${(currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0]}`, b); else falhas.push('OS (nenhum arquivo anexado)'); } catch { falhas.push('OS'); }
+    step('Cronograma…');
+    try { zip.file(`05_Cronograma_${slug}.xlsx`, await croXlsxBlob()); } catch { falhas.push('Cronograma'); }
+    step('Entrega para suporte…');
+    try { implTab('ent'); await new Promise(r => setTimeout(r, 300)); syncEntrega(); zip.file(`08_Entrega_Suporte_${slug}.pdf`, entregaCanvasToPdf(await capture())); } catch(e){ console.error(e); falhas.push('Entrega para suporte'); }
+    step('Status report…');
+    try { const r0 = impls.find(x => x.id === currentImpl.id);
+      zip.file(`09_Status_${slug}.pptx`, await stPptx({ id: currentImpl.id, cliente: readImplHeader().nome, dados: currentImpl.dados, updated_at: r0?.updated_at || new Date().toISOString() }, '', true)); } catch(e){ console.error(e); falhas.push('Status report'); }
+    step('Checklist…');
+    try { implTab('chk'); await new Promise(r => setTimeout(r, 300)); zip.file(`10_Checklist_${slug}.pdf`, canvasToPdfBlob(await captureImpl())); } catch(e){ console.error(e); falhas.push('Checklist'); }
+    step('Compactando…');
+    const blob = await zip.generateAsync({ type:'blob' });
+    implTab(tabAtual); $('#busyModal').hidden = true;
+    await save(`Implantacao_${slug}.zip`, blob);
+    flash(falhas.length ? 'Baixado. Ficaram de fora: ' + falhas.join(', ') : 'Todos os arquivos baixados.');
+  } catch(e){ console.error(e); implTab(tabAtual); $('#busyModal').hidden = true; flash('Erro ao gerar os arquivos.'); }
 });
 
 /* ---------- abas da implantação ---------- */
@@ -1986,6 +2208,7 @@ $('#btnImplDelete').addEventListener('click', async () => {
   const v = await ask('Excluir implantação?', `A implantação de ${$('#imNome').value || 'este cliente'} e todas as atividades dela serão apagadas definitivamente.`, [['Cancelar','b-ghost',null],['Excluir definitivamente','b-danger','del']]);
   if (v !== 'del') return;
   const { data, error } = await sb.from('implantacoes').delete().eq('id', currentImpl.id).select('id');
+  if (!error && data?.length && currentImpl.dados.os?.path) await sb.storage.from('arquivos').remove([currentImpl.dados.os.path]);
   if (error || !data?.length){ $('#implMsg').textContent = 'Não foi possível excluir' + (error ? ': ' + error.message : ': sem permissão.'); return; }
   markClean(); currentImpl = null; flash('Implantação excluída.'); show('impl'); loadImpl();
 });
@@ -2107,7 +2330,7 @@ async function stDownload(r, kind){
   } catch(err){ console.error(err); flash('Erro ao gerar o arquivo.'); }
 }
 
-async function stPptx(r, base){
+async function stPptx(r, base, asBlob){
   if (!window.PptxGenJS){ flash('Biblioteca do PowerPoint não carregou. Recarregue a página.'); return; }
   const d = statusData(r), pres = new PptxGenJS();
   pres.defineLayout({ name:'STATUS', width:13.333, height:12.245 }); pres.layout = 'STATUS';
@@ -2144,6 +2367,7 @@ async function stPptx(r, base){
   sl.addTable(rows(d.prox), { ...topt, x:xL });
   sl.addTable(rows(d.fin), { ...topt, x:xR });
   const blob = await pres.write({ outputType:'blob' });
+  if (asBlob) return blob;
   await save(base + '.pptx', blob); flash('PowerPoint baixado.');
 }
 
