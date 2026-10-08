@@ -306,6 +306,16 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 .cro-leg{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin:8px 0 0;flex-wrap:wrap}
 .cro-leg i{display:inline-block;width:18px;height:10px;vertical-align:middle;margin-right:5px;border-radius:2px}
 .catrow.wide{grid-template-columns:minmax(200px,1fr) 110px 2fr 34px}
+.tcount{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--grey);border-radius:8px;padding:10px 14px;margin-bottom:12px}
+.tcount.ok{border-left-color:#2E9E62}.tcount.under{border-left-color:var(--blue)}.tcount.over{border-left-color:#B3261E}
+.tcount div span{display:block;font-size:11.5px;color:var(--muted)}
+.tcount div b{font:700 22px/1.1 "Barlow Condensed",sans-serif}
+.tcount .msg{font-size:13.5px;font-weight:600;flex:1;min-width:220px}
+.tcount.ok .msg{color:#1F6B47}.tcount.under .msg{color:#0A5A92}.tcount.over .msg{color:#B3261E}
+.tcount .bar2{flex-basis:100%;height:8px;background:var(--field);border:1px solid var(--line);border-radius:4px;overflow:hidden;position:relative}
+.tcount .bar2 i{position:absolute;inset:0 auto 0 0;background:var(--orange)}
+.tcount.over .bar2 i{background:#B3261E}.tcount.ok .bar2 i{background:#2E9E62}
+.pa-row input[data-pt]{text-align:center}
 .sched-ok{color:#1F6B47}.sched-warn{color:#9A4A00;font-weight:600}
 .os-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
 .os-line span{color:var(--muted)}
@@ -327,7 +337,7 @@ input.dt-warn{border-color:#E8A300!important;background:#FFF6DD!important}
 .prod-item button.sel{flex:1;text-align:left;background:var(--field);border:1px solid var(--line);color:var(--ink);font-weight:600}
 .prod-item button.sel.active{border-color:var(--orange);box-shadow:inset 3px 0 0 var(--orange)}
 .prod-item small{color:var(--muted);font-weight:500;margin-left:6px}
-.pa-row{display:grid;grid-template-columns:58px 1fr 104px 64px 64px 72px 72px 108px 34px;gap:6px;align-items:center;margin-bottom:6px}
+.pa-row{display:grid;grid-template-columns:58px minmax(200px,1fr) 104px 70px 80px 64px 108px 34px;gap:6px;align-items:center;margin-bottom:6px}
 .pa-row.h{font-size:12px;color:var(--muted);font-weight:600}
 .pa-row .ordb{margin:0}
 @media (max-width:900px){.pa-row{grid-template-columns:44px 1fr 1fr}}
@@ -534,6 +544,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <button type="button" class="b-alt" id="btnRecalc" style="color:var(--ink)">Recalcular datas</button>
     </div>
   </div>
+  <div id="tempoCard"></div>
   <div class="groups" id="implGroups"></div>
   <div class="det-card" style="padding:0">
     <h3 class="cardh">Atividades do projeto</h3>
@@ -1340,6 +1351,7 @@ const STATUS_SEL = {'Concluído':'s-c','Em andamento':'s-a','Atenção':'s-w','A
 let catalogo = [];
 
 function renderGroupsImpl(){
+  if (typeof renderTempoCard === 'function') try { renderTempoCard(); } catch {}
   const atv = currentImpl.dados.atividades || [];
   const tiles = (t, resp) => { const s = implStats(atv, resp); return `<div class="group"><h3>${t} <small>(${s.n} atividade${s.n===1?'':'s'})</small></h3><div class="tiles">
     <div class="tile"><span>Progresso geral</span><b>${s.prog}%</b><div class="pbar" style="margin-top:6px"><i class="${s.prog>=100?'full':''}" style="width:${s.prog}%"></i></div></div>
@@ -2136,6 +2148,35 @@ function schedule(list, start, keep = () => false){
 }
 const contratoDias = () => { const ck = currentImpl?.dados.checklist || {}; return (parseInt(ck.diasRemPrev) || 0) + (parseInt(ck.diasPresPrev) || 0); };
 const fimContrato = (start, dias) => start && dias > 0 ? addBD(start, dias - 1) : '';
+// duração total da sequência (em dias úteis), considerando atividades em paralelo
+function spanDias(list, tempoFn){
+  let cur = 0, prevStart = 0, maxEnd = 0;
+  list.forEach(a => { const half = Math.max(1, Math.round((tempoFn(a) || 0) * 2)); const st = a.paralelo ? prevStart : cur, en = st + half;
+    maxEnd = Math.max(maxEnd, en); prevStart = st; if (!a.paralelo) cur = en; });
+  return maxEnd / 2;
+}
+const fmtD = v => String(Math.round(v * 10) / 10).replace('.', ',');
+function tempoCounterHTML(total, contrato, semTempo){
+  const diff = contrato ? total - contrato : 0;
+  const cls = !contrato ? '' : diff > 0 ? 'over' : diff < 0 ? 'under' : 'ok';
+  const msg = !contrato ? 'Informe os dias remotos e presenciais do contrato para comparar.'
+    : diff > 0 ? `Excede o contrato em ${fmtD(diff)} dia(s) útil(eis). Reduza o tempo de alguma atividade ou marque atividades em paralelo.`
+    : diff < 0 ? `Sobram ${fmtD(-diff)} dia(s) útil(eis) do contrato.` : 'Exatamente dentro do contrato.';
+  const pct = contrato ? Math.min(100, total / contrato * 100) : 0;
+  return `<div class="tcount ${cls}">
+    <div><span>Tempo das atividades</span><b>${fmtD(total)} d</b></div>
+    <div><span>Contrato (remoto + presencial)</span><b>${contrato ? contrato + ' d' : '—'}</b></div>
+    <div><span>Diferença</span><b>${contrato ? (diff > 0 ? '+' : '') + fmtD(diff) + ' d' : '—'}</b></div>
+    <div class="msg">${msg}${semTempo ? `<br><span style="color:#9A4A00;font-weight:500">${semTempo} atividade(s) sem tempo definido (contadas como 1 dia).</span>` : ''}</div>
+    ${contrato ? `<div class="bar2"><i style="width:${pct}%"></i></div>` : ''}</div>`;
+}
+function renderTempoCard(){
+  if (!currentImpl) return;
+  const atv = [...(currentImpl.dados.atividades||[])].sort((a,b) => (a.ordem||0) - (b.ordem||0));
+  if (!atv.length){ $('#tempoCard').innerHTML = ''; return; }
+  const sem = atv.filter(a => !(Number(a.diasPrev) > 0) && tempoCat(a.nome) == null).length;
+  $('#tempoCard').innerHTML = tempoCounterHTML(spanDias(atv, tempoAtv), contratoDias(), sem);
+}
 const lastFim = atv => atv.map(a => a.fim || a.inicio).filter(Boolean).sort().pop() || '';
 
 /* ---------- feriados (configurações) ---------- */
@@ -2194,6 +2235,7 @@ function syncDiasHeader(){
 }
 function updatePeriodoInfo(){
   if (!currentImpl) return;
+  renderTempoCard();
   const dias = contratoDias(), ini = $('#imInicio').value, fc = fimContrato(ini, dias);
   $('#imPeriodo').textContent = dias ? `Contrato: ${dias} dia(s) útil(eis)` + (fc ? ` · encerramento previsto ${fmtDate(fc)}` : '') : 'Informe os dias do contrato para prever o encerramento.';
   const fimAtv = lastFim(currentImpl.dados.atividades || []), fim = $('#imFim').value, box = $('#schedInfo');
@@ -2319,15 +2361,15 @@ function renderProdEditor(){
   box.innerHTML = `<label class="f" style="margin-bottom:12px">Nome do produto<input type="text" id="pdNome" value="${esc(prodDraft.nome)}"></label>
     <div class="pd-dias"><label class="f">Dias remotos (padrão)<input type="number" min="0" step="1" id="pdRem" value="${prodDraft.diasRem ?? ''}"></label>
       <label class="f">Dias presenciais (padrão)<input type="number" min="0" step="1" id="pdPres" value="${prodDraft.diasPres ?? ''}"></label></div>
+    <div id="pdCounter"></div>
     <p class="cfgp" style="font-size:13px">As atividades são encaixadas em sequência a partir da data de início, usando o tempo do catálogo (Configurações > Catálogo de atividades). Marque "Paralelo" para a atividade começar junto com a anterior sem empurrar as seguintes. O encerramento do projeto vem dos dias remotos + presenciais.</p>
-    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Dias prev.</span><span>Tempo</span><span>Paralelo</span><span>Modalidade</span><span></span></div>
+    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Tempo (d)</span><span>Paralelo</span><span>Modalidade</span><span></span></div>
     ${list.map((t,i) => `<div class="pa-row" data-i="${i}">
       <span class="ord" style="white-space:nowrap">${i+1}<span class="ordb"><button type="button" data-pmv="-1" ${i===0?'disabled':''} aria-label="Subir">▲</button><button type="button" data-pmv="1" ${i===n-1?'disabled':''} aria-label="Descer">▼</button></span></span>
       <input type="text" list="atvSug" data-pf="nome" value="${esc(t.nome)}" placeholder="Atividade do catálogo">
       <select data-pf="resp">${opt(RESP_OPTS, t.resp || 'Cittati')}</select>
       <input type="number" min="0" step="1" data-pf="prev" value="${t.prev ?? 1}">
-      <input type="number" min="0" step="0.5" data-pf="diasPrev" value="${t.diasPrev ?? 0}">
-      <span style="text-align:center;font-size:13px" title="Tempo do catálogo">${tempoCat(t.nome) != null ? String(tempoCat(t.nome)).replace('.',',') + ' d' : '<span style=\'color:#9A4A00\'>sem tempo</span>'}</span>
+      <input type="number" min="0.5" step="0.5" data-pt value="${tempoCat(t.nome) ?? ''}" placeholder="—" ${catalogo.some(c => norm(c.nome) === norm(t.nome)) ? '' : 'disabled title="Atividade fora do catálogo"'} aria-label="Tempo (dias úteis, vale para o catálogo)">
       <label style="display:flex;justify-content:center"><input type="checkbox" data-pf="paralelo" ${t.paralelo ? 'checked' : ''} aria-label="Em paralelo com a anterior"></label>
       <select data-pf="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'], t.modalidade)}</select>
       <button type="button" class="b-del" data-prm aria-label="Remover atividade" title="Remover">×</button></div>`).join('')}
@@ -2335,17 +2377,33 @@ function renderProdEditor(){
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
       <button type="button" class="b-ghost" id="btnPdImport" style="border:1px solid var(--line)">Copiar de uma implantação</button>
       <button type="button" class="b-save" id="btnPdSave">Salvar produto</button></div>`;
-  renderDatalist();
+  renderDatalist(); renderPdCounter();
+}
+function renderPdCounter(){
+  if (!prodDraft) return;
+  const L = prodDraft.atividades.filter(t => (t.nome||'').trim());
+  const sem = L.filter(t => tempoCat(t.nome) == null).length;
+  $('#pdCounter').innerHTML = tempoCounterHTML(spanDias(L, t => tempoCat(t.nome) || 1), (Number(prodDraft.diasRem) || 0) + (Number(prodDraft.diasPres) || 0), sem);
 }
 $('#prodEditor').addEventListener('input', e => {
   if (e.target.id === 'pdNome'){ prodDraft.nome = e.target.value; return; }
-  if (e.target.id === 'pdRem' || e.target.id === 'pdPres'){ prodDraft[e.target.id === 'pdRem' ? 'diasRem' : 'diasPres'] = e.target.value === '' ? null : Math.round(Number(e.target.value)); return; }
+  if (e.target.id === 'pdRem' || e.target.id === 'pdPres'){ prodDraft[e.target.id === 'pdRem' ? 'diasRem' : 'diasPres'] = e.target.value === '' ? null : Math.round(Number(e.target.value)); renderPdCounter(); return; }
+  if ('pt' in e.target.dataset) return;
   const f = e.target.dataset.pf; if (!f) return;
   const t = prodDraft.atividades[e.target.closest('[data-i]').dataset.i];
-  if (f === 'paralelo') t.paralelo = e.target.checked;
+  if (f === 'paralelo'){ t.paralelo = e.target.checked; renderPdCounter(); }
   else t[f] = (f === 'prev' || f === 'diasPrev') ? Number(e.target.value) || 0 : e.target.value;
 });
-$('#prodEditor').addEventListener('change', e => { if (e.target.dataset.pf === 'nome') renderProdEditor(); });
+$('#prodEditor').addEventListener('change', async e => {
+  if (e.target.dataset.pf === 'nome'){ renderProdEditor(); return; }
+  if ('pt' in e.target.dataset){
+    const t = prodDraft.atividades[e.target.closest('[data-i]').dataset.i], c = catalogo.find(x => norm(x.nome) === norm(t.nome)); if (!c) return;
+    const v = e.target.value === '' ? null : Math.max(0.5, Math.round(Number(e.target.value) * 2) / 2);
+    const { error } = await sb.from('catalogo_atividades').update({ tempo: v }).eq('id', c.id);
+    if (error){ flash('Erro: ' + error.message); return; }
+    c.tempo = v; renderProdEditor(); flash('Tempo atualizado no catálogo (vale para todos os produtos).');
+  }
+});
 $('#prodEditor').addEventListener('click', async e => {
   const L = prodDraft?.atividades;
   const mv = e.target.closest('[data-pmv]');
