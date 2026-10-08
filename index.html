@@ -305,7 +305,8 @@ table.cro textarea{font:13px/1.35 "Barlow",sans-serif;color:var(--ink);backgroun
 table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);background:var(--field)}
 .cro-leg{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin:8px 0 0;flex-wrap:wrap}
 .cro-leg i{display:inline-block;width:18px;height:10px;vertical-align:middle;margin-right:5px;border-radius:2px}
-.catrow.wide{grid-template-columns:minmax(200px,1fr) 2fr 34px}
+.catrow.wide{grid-template-columns:minmax(200px,1fr) 110px 2fr 34px}
+.sched-ok{color:#1F6B47}.sched-warn{color:#9A4A00;font-weight:600}
 .os-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
 .os-line span{color:var(--muted)}
 .os-line button{padding:5px 10px;font-size:13px}
@@ -504,7 +505,12 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <label class="f">Coordenador<input type="text" id="imCoord"></label>
       <label class="f">Produto implantado<select id="imProduto"></select></label>
       <label class="f">Data de início<input type="date" id="imInicio"></label>
-      <label class="f">Data de fim<input type="date" id="imFim"></label>
+      <label class="f">Data de fim <small id="imFimInfo" style="color:var(--blue)"></small><input type="date" id="imFim"></label>
+    </div>
+    <div class="row">
+      <label class="f">Dias remotos (contrato)<input type="number" min="0" step="1" id="imDiasRem"></label>
+      <label class="f">Dias presenciais (contrato)<input type="number" min="0" step="1" id="imDiasPres"></label>
+      <div class="f" style="font-size:13px;color:var(--muted);align-self:end;padding-bottom:9px" id="imPeriodo"></div>
     </div>
     <div class="os-line"><span>Arquivo da OS:</span> <b id="osName">nenhum arquivo anexado</b>
       <button type="button" class="b-alt" id="btnOsDown" style="color:var(--ink)" hidden>Baixar OS</button>
@@ -523,6 +529,10 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div class="det-card chamado-card">
     <label class="f" style="max-width:320px">Nº do chamado de implantação<input type="text" id="imChamado" placeholder="Ex.: 311851"></label>
     <span class="auto-tag" style="align-self:end;padding-bottom:9px">Preenche automaticamente o item correspondente do Checklist</span>
+    <div style="margin-left:auto;align-self:end;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span id="schedInfo" style="font-size:13px"></span>
+      <button type="button" class="b-alt" id="btnRecalc" style="color:var(--ink)">Recalcular datas</button>
+    </div>
   </div>
   <div class="groups" id="implGroups"></div>
   <div class="det-card" style="padding:0">
@@ -1308,11 +1318,11 @@ function openImpl(id){
   $('#imNome').value = c.nome || r?.cliente || ''; setImplAnalista(c.cittati || '');
   $('#imCliente').value = c.cliente || ''; setImplProduto((c.produtos||[]).join(' + '));
   $('#imChamado').value = currentImpl.dados.chamado || '';
-  $('#imCoord').value = c.coordenador || ''; $('#imInicio').value = c.inicio || ''; $('#imInicio').dataset.prev = c.inicio || ''; $('#imFim').value = c.fim || '';
+  $('#imCoord').value = c.coordenador || ''; $('#imInicio').value = c.inicio || ''; $('#imInicio').dataset.prev = c.inicio || ''; $('#imFimInfo').textContent = ''; $('#imFim').value = c.fim || '';
   $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
   $('#imProduto').value = c.produto || '';
   currentImpl.dados.checklist ||= { itens:{} };
-  entLoaded = false; loadEntregaIntoForm(); entLoaded = true; renderOsLine();
+  entLoaded = false; loadEntregaIntoForm(); entLoaded = true; renderOsLine(); syncDiasHeader();
   implTab('atv'); loadChecklistTpl();
   $('#implMsg').textContent = ''; $('#implAuto').textContent = ''; clearTimeout(implTimer); markClean(); renderImplDet(); show('implDet');
   loadCatalog();
@@ -1381,7 +1391,7 @@ function renderImplDet(){
 
 /* edição da tabela */
 function atvById(id){ return (currentImpl.dados.atividades||[]).find(a => String(a.id) === String(id)); }
-function implChanged(){ markDirty(); scheduleImplSave(); if (chkTpl) updateChkPct(); }
+function implChanged(){ markDirty(); scheduleImplSave(); if (chkTpl) updateChkPct(); if (typeof updatePeriodoInfo === 'function') updatePeriodoInfo(); }
 $('#atvBody').addEventListener('input', e => {
   const el = e.target, f = el.dataset.f; if (!f) return;
   if (el.tagName === 'TEXTAREA') grow(el);
@@ -1494,18 +1504,26 @@ $('#anaNew').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preven
 
 /* catálogo (compartilhado) */
 async function loadCatalog(){
-  const { data, error } = await sb.from('catalogo_atividades').select('id,nome,descricao').order('nome');
+  const { data, error } = await sb.from('catalogo_atividades').select('id,nome,descricao,tempo').order('nome');
   if (!error){ catalogo = data; renderCatalog(); renderDatalist(); }
   else $('#catList').innerHTML = `<div class="note">Catálogo indisponível: ${esc(error.message)}</div>`;
 }
 function renderCatalog(){
-  $('#catList').innerHTML = catalogo.length ? '<div class="catrow wide" style="font-size:12px;color:var(--muted);font-weight:600"><span>Atividade</span><span>Descrição padrão (usada no Cronograma)</span><span></span></div>' + catalogo.map(c => `<div class="catrow wide" data-cid="${c.id}">
+  $('#catList').innerHTML = catalogo.length ? '<div class="catrow wide" style="font-size:12px;color:var(--muted);font-weight:600"><span>Atividade</span><span>Tempo (dias úteis)</span><span>Descrição padrão (usada no Cronograma)</span><span></span></div>' + catalogo.map(c => `<div class="catrow wide" data-cid="${c.id}">
     <input type="text" value="${esc(c.nome)}" data-cat aria-label="Atividade do catálogo">
+    <input type="number" min="0.5" step="0.5" value="${c.tempo ?? ''}" data-cattempo placeholder="—" aria-label="Tempo estimado em dias úteis">
     <input type="text" value="${esc(c.descricao||'')}" data-catdesc placeholder="Descrição exibida no cronograma" aria-label="Descrição padrão">
     <button type="button" class="b-del" data-catdel aria-label="Remover do catálogo" title="Remover do catálogo">×</button>
   </div>`).join('') : '<div class="empty">Nenhum item no catálogo ainda.</div>';
 }
 $('#catList').addEventListener('change', async e => {
+  if (e.target.matches('[data-cattempo]')){
+    const id = e.target.closest('[data-cid]').dataset.cid, v = e.target.value === '' ? null : Math.max(0.5, Math.round(Number(e.target.value) * 2) / 2);
+    if (v !== null) e.target.value = v;
+    const { error } = await sb.from('catalogo_atividades').update({ tempo: v }).eq('id', id);
+    if (error) flash('Erro: ' + error.message); else { const c = catalogo.find(x => String(x.id) === id); if (c) c.tempo = v; flash('Tempo salvo.'); }
+    return;
+  }
   if (e.target.matches('[data-catdesc]')){
     const id = e.target.closest('[data-cid]').dataset.cid, descricao = e.target.value.trim();
     const { error } = await sb.from('catalogo_atividades').update({ descricao }).eq('id', id);
@@ -1530,7 +1548,7 @@ async function addCatalog(){
   if (catalogo.some(c => c.nome.toLowerCase() === nome.toLowerCase())){ flash('Essa atividade já está no catálogo.'); return; }
   const { data, error } = await sb.from('catalogo_atividades').insert({ nome }).select('id,nome').single();
   if (error){ flash('Erro: ' + error.message); return; }
-  catalogo.push({ id:data.id, nome, descricao:'' }); catalogo.sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
+  catalogo.push({ id:data.id, nome, descricao:'', tempo:null }); catalogo.sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
   $('#catNew').value = ''; renderCatalog(); renderDatalist(); $('#catNew').focus();
 }
 $('#btnAddCat').addEventListener('click', addCatalog);
@@ -1847,14 +1865,14 @@ function osSyncProduto(){
   $('#osDiasRem').value = p?.diasRem ?? ''; $('#osDiasPres').value = p?.diasPres ?? '';
 }
 function osCalcFim(){
-  const p = produtos.find(x => x.nome === $('#osProd').value), ini = $('#osIni').value;
-  const fim = p && ini ? lastFim((p.atividades||[]).map(t => datesFromTpl(t, ini))) : '';
-  $('#osFimAuto').textContent = fim ? '(calculado: ' + fmtDate(fim) + ')' : '';
+  const ini = $('#osIni').value, dias = (parseInt($('#osDiasRem').value) || 0) + (parseInt($('#osDiasPres').value) || 0);
+  const fim = fimContrato(ini, dias);
+  $('#osFimAuto').textContent = fim ? '(pelo contrato: ' + fmtDate(fim) + ')' : '';
   if (!osFimManual) $('#osFim').value = fim;
 }
 $('#osBody').addEventListener('change', e => {
   if (e.target.id === 'osProd'){ osSyncProduto(); osCalcFim(); }
-  if (e.target.id === 'osIni') osCalcFim();
+  if (e.target.id === 'osIni' || e.target.id === 'osDiasRem' || e.target.id === 'osDiasPres') osCalcFim();
   if (e.target.id === 'osFim') osFimManual = !!e.target.value;
 });
 $('#osCreate').addEventListener('click', async () => {
@@ -1865,8 +1883,9 @@ $('#osCreate').addEventListener('click', async () => {
   const head = { nome, cittati: $('#osAna').value, cliente: $('#osResp').value.trim(), produtos: prodName ? [prodName] : [],
     coordenador: $('#osCoord').value.trim(), produto: $('#osProdImpl').value, inicio: $('#osIni').value, fim: $('#osFim').value };
   const num = id => $(id).value === '' ? '' : Math.round(Number($(id).value));
-  const atividades = p ? (p.atividades||[]).map((t,i) => makeAtvFromTpl(t, i, head.inicio)) : [];
-  if (!head.fim) head.fim = lastFim(atividades);
+  const atividades = p ? (p.atividades||[]).map((t,i) => makeAtvFromTpl(t, i)) : [];
+  schedule(atividades, head.inicio);
+  if (!head.fim) head.fim = fimContrato(head.inicio, (parseInt($('#osDiasRem').value) || 0) + (parseInt($('#osDiasPres').value) || 0));
   const dados = { cliente: head, atividades, checklist: { itens:{}, diasRemPrev: num('#osDiasRem'), diasPresPrev: num('#osDiasPres') }, entrega: osToEntrega(osPending.os, head) };
   $('#osCreate').disabled = true; $('#osErr').textContent = '';
   try {
@@ -2055,6 +2074,7 @@ $('#tabChk').addEventListener('input', e => {
   if (el.dataset.ck){
     if ('int' in el.dataset && el.value !== '' && !Number.isInteger(Number(el.value))) el.value = Math.round(Number(el.value));
     ck[el.dataset.ck] = el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value;
+    if (el.dataset.ck === 'diasRemPrev' || el.dataset.ck === 'diasPresPrev'){ syncDiasHeader(); setFimByContrato(); }
     const custoDif = (Number(ck.custoPrev)||0) - (Number(ck.custoReal)||0), pesqDif = (Number(ck.pesqReal)||0) - (Number(ck.pesqPrev)||0);
     const cd = $('#ckCustoDif'), pd = $('#ckPesqDif');
     if (cd){ cd.textContent = custoDif.toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); cd.className = diffCls(custoDif); }
@@ -2099,11 +2119,23 @@ function bdDiff(a, b){
   return n;
 }
 const isNonBD = v => v && !isBD(isoD(v));
-function datesFromTpl(t, start){
-  if (!start || t.offset == null || t.offset === '') return { inicio:'', fim:'' };
-  const ini = addBD(start, Number(t.offset) || 0);
-  return { inicio: ini, fim: addBD(ini, Math.max(1, Number(t.dur) || 1) - 1) };
+// tempo da atividade: o "Dias prev." da própria atividade; se vazio, o tempo do catálogo
+const tempoCat = nome => { const c = catalogo.find(x => norm(x.nome) === norm(nome)); return c && c.tempo ? Number(c.tempo) : null; };
+const tempoAtv = a => Number(a.diasPrev) > 0 ? Number(a.diasPrev) : (tempoCat(a.nome) || 1);
+// encaixa as atividades em sequência a partir do início, em meios-dias úteis.
+// "paralelo" começa junto com a atividade anterior e não empurra as seguintes.
+function schedule(list, start, keep = () => false){
+  if (!start) return;
+  let cur = 0, prevStart = 0;
+  list.forEach(a => {
+    const half = Math.max(1, Math.round(tempoAtv(a) * 2));
+    const st = a.paralelo ? prevStart : cur, en = st + half;
+    if (!keep(a)){ a.inicio = addBD(start, Math.floor(st / 2)); a.fim = addBD(start, Math.ceil(en / 2) - 1); }
+    prevStart = st; if (!a.paralelo) cur = en;
+  });
 }
+const contratoDias = () => { const ck = currentImpl?.dados.checklist || {}; return (parseInt(ck.diasRemPrev) || 0) + (parseInt(ck.diasPresPrev) || 0); };
+const fimContrato = (start, dias) => start && dias > 0 ? addBD(start, dias - 1) : '';
 const lastFim = atv => atv.map(a => a.fim || a.inicio).filter(Boolean).sort().pop() || '';
 
 /* ---------- feriados (configurações) ---------- */
@@ -2149,19 +2181,60 @@ function setImplProduto(v){
   s2.value = v || ''; s2.dataset.prev = s2.value;
 }
 function fillProdutoSelect(){ if (currentImpl) setImplProduto($('#imProdutos').value); }
-function makeAtvFromTpl(t, i, start){
-  const c = catalogo.find(x => x.nome === t.nome), dt = datesFromTpl(t, start);
+function makeAtvFromTpl(t, i){
+  const c = catalogo.find(x => norm(x.nome) === norm(t.nome));
   return { id: i + 1, ordem: i + 1, nome: t.nome, catalogId: c ? c.id : null, prev: Number(t.prev) || 1, real: 0,
-    diasPrev: Number(t.diasPrev) || 0, diasReal: 0, inicio: dt.inicio, fim: dt.fim, offset: t.offset ?? null, dur: Number(t.dur) || 1, pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'', descricao: c?.descricao || '' };
+    diasPrev: c && c.tempo ? Number(c.tempo) : (Number(t.diasPrev) || 0), diasReal: 0, inicio:'', fim:'', paralelo: !!t.paralelo, pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'', descricao: c?.descricao || '' };
 }
-// fim do projeto e dias previstos do checklist a partir do produto (só preenche o que estiver vazio)
+/* ---------- período do contrato e datas ---------- */
+function syncDiasHeader(){
+  const ck = currentImpl.dados.checklist ||= { itens:{} };
+  $('#imDiasRem').value = ck.diasRemPrev ?? ''; $('#imDiasPres').value = ck.diasPresPrev ?? '';
+  updatePeriodoInfo();
+}
+function updatePeriodoInfo(){
+  if (!currentImpl) return;
+  const dias = contratoDias(), ini = $('#imInicio').value, fc = fimContrato(ini, dias);
+  $('#imPeriodo').textContent = dias ? `Contrato: ${dias} dia(s) útil(eis)` + (fc ? ` · encerramento previsto ${fmtDate(fc)}` : '') : 'Informe os dias do contrato para prever o encerramento.';
+  const fimAtv = lastFim(currentImpl.dados.atividades || []), fim = $('#imFim').value, box = $('#schedInfo');
+  if (!fimAtv || !fim){ box.textContent = ''; box.className = ''; return; }
+  const d = bdDiff(fim, fimAtv);
+  box.className = d ? 'sched-warn' : 'sched-ok';
+  box.textContent = d === 0 ? `Atividades terminam em ${fmtDate(fimAtv)}, dentro do contrato.`
+    : `Atividades terminam em ${fmtDate(fimAtv)}: ${Math.abs(d)} dia(s) útil(eis) ${d > 0 ? 'após' : 'antes d'}o fim do contrato. Ajuste as atividades.`;
+}
+// fim do projeto = início + dias do contrato
+function setFimByContrato(){
+  const fc = fimContrato($('#imInicio').value, contratoDias());
+  if (fc){ $('#imFim').value = fc; currentImpl.dados.cliente = readImplHeader(); applyEntregaLocks(); refresh(); }
+  $('#imFimInfo').textContent = fc ? '(pelo contrato)' : '';
+  updatePeriodoInfo();
+}
 function applyProdutoExtras(p){
-  const atv = currentImpl.dados.atividades || [], fim = lastFim(atv);
-  if (fim && !$('#imFim').value){ $('#imFim').value = fim; currentImpl.dados.cliente = readImplHeader(); applyEntregaLocks(); }
   const ck = currentImpl.dados.checklist ||= { itens:{} };
   if (p && (ck.diasRemPrev === '' || ck.diasRemPrev == null) && p.diasRem != null) ck.diasRemPrev = p.diasRem;
   if (p && (ck.diasPresPrev === '' || ck.diasPresPrev == null) && p.diasPres != null) ck.diasPresPrev = p.diasPres;
+  syncDiasHeader();
+  const start = $('#imInicio').value;
+  if (start){ schedule(sortAtv(), start); if (!$('#imFim').value) setFimByContrato(); }
 }
+['#imDiasRem','#imDiasPres'].forEach(id => $(id).addEventListener('input', () => {
+  const ck = currentImpl.dados.checklist ||= { itens:{} }, el = $(id);
+  if (el.value !== '' && !Number.isInteger(Number(el.value))) el.value = Math.round(Number(el.value));
+  ck[id === '#imDiasRem' ? 'diasRemPrev' : 'diasPresPrev'] = el.value === '' ? '' : Number(el.value);
+  setFimByContrato(); if (!$('#tabChk').hidden) renderChecklist(); implChanged();
+}));
+$('#imFim').addEventListener('change', () => { $('#imFimInfo').textContent = ''; updatePeriodoInfo(); });
+$('#btnRecalc').addEventListener('click', async () => {
+  const start = $('#imInicio').value;
+  if (!start){ flash('Informe a data de início do projeto.'); $('#imInicio').focus(); return; }
+  const atv = sortAtv(); if (!atv.length){ flash('Não há atividades para calcular.'); return; }
+  const v = await ask('Recalcular datas?', 'As datas das atividades não concluídas serão recalculadas em sequência a partir da data de início, pelo tempo de cada atividade (coluna Dias prev. ou, se vazia, o tempo do catálogo). Atividades concluídas não são alteradas.',
+    [['Cancelar','b-ghost',null],['Recalcular','b-save','ok']]);
+  if (!v) return;
+  schedule(atv, start, a => a.status === 'Concluído' || Number(a.pct) >= 100);
+  renderAtvTable(); renderGroupsImpl(); if (!$('#tabCro').hidden) renderCronograma(); updatePeriodoInfo(); implChanged(); flash('Datas recalculadas.');
+});
 // mudança na data de início do projeto
 $('#imInicio').addEventListener('focus', () => { $('#imInicio').dataset.prev = $('#imInicio').value; });
 $('#imInicio').addEventListener('change', async () => {
@@ -2169,29 +2242,22 @@ $('#imInicio').addEventListener('change', async () => {
   if (novo && Number(novo.slice(0,4)) < 2000) return; // ainda digitando o ano
   el.dataset.prev = novo;
   if (!novo || !currentImpl) return;
-  const atv = currentImpl.dados.atividades || [];
-  const semData = atv.filter(a => !a.inicio && a.offset != null && a.offset !== '');
-  const comData = atv.filter(a => a.inicio && a.status !== 'Concluído' && !(Number(a.pct) >= 100));
-  let mudou = false;
-  if (semData.length){ semData.forEach(a => Object.assign(a, datesFromTpl(a, novo))); mudou = true; }
-  if (antigo && antigo !== novo && comData.length){
-    const shift = bdDiff(antigo, novo);
-    if (shift){
-      const v = await ask('Deslocar as atividades?', `A data de início mudou ${Math.abs(shift)} dia(s) útil(eis) ${shift > 0 ? 'para frente' : 'para trás'}. Deseja deslocar as ${comData.length} atividade(s) não concluída(s) na mesma proporção? Os seus ajustes manuais são mantidos, porque todas andam juntas.`,
-        [['Manter as datas','b-ghost',null],['Deslocar atividades','b-save','ok']]);
-      if (v){
-        comData.forEach(a => { a.inicio = addBD(a.inicio, shift); if (a.fim) a.fim = addBD(a.fim, shift); });
-        if ($('#imFim').value) $('#imFim').value = addBD($('#imFim').value, shift);
-        mudou = true;
-      }
-    }
+  setFimByContrato();
+  const atv = sortAtv(), aberto = a => !(a.status === 'Concluído' || Number(a.pct) >= 100);
+  if (!atv.length) return;
+  const temDatas = atv.some(a => a.inicio), shift = antigo && antigo !== novo ? bdDiff(antigo, novo) : 0;
+  let acao = 'calc';
+  if (temDatas){
+    const btns = [['Manter as datas','b-ghost',null]];
+    if (shift) btns.push(['Deslocar atividades','b-save','shift']);
+    btns.push(['Recalcular pelo tempo','b-save','calc']);
+    acao = await ask('Atualizar as datas das atividades?', (shift ? `A data de início mudou ${Math.abs(shift)} dia(s) útil(eis) ${shift > 0 ? 'para frente' : 'para trás'}. Deslocar mantém os seus ajustes manuais; ` : '') + 'Recalcular encaixa todas as atividades não concluídas em sequência pelo tempo de cada uma.', btns);
+    if (!acao) { updatePeriodoInfo(); return; }
   }
-  if (mudou){
-    if (!$('#imFim').value){ const f = lastFim(atv); if (f) $('#imFim').value = f; }
-    currentImpl.dados.cliente = readImplHeader(); applyEntregaLocks(); refresh();
-    renderAtvTable(); renderGroupsImpl(); if (!$('#tabCro').hidden) renderCronograma(); implChanged();
-    flash('Datas das atividades atualizadas.');
-  }
+  if (acao === 'shift') atv.filter(a => a.inicio && aberto(a)).forEach(a => { a.inicio = addBD(a.inicio, shift); if (a.fim) a.fim = addBD(a.fim, shift); });
+  else schedule(atv, novo, a => !aberto(a));
+  renderAtvTable(); renderGroupsImpl(); if (!$('#tabCro').hidden) renderCronograma(); updatePeriodoInfo(); implChanged();
+  flash('Datas das atividades atualizadas.');
 });
 $('#imProdutos').addEventListener('change', async () => {
   const sel = $('#imProdutos'), p = produtos.find(x => x.nome === sel.value);
@@ -2204,11 +2270,11 @@ $('#imProdutos').addEventListener('change', async () => {
     if (!modo){ sel.dataset.prev = sel.value; return; }
   }
   const start = $('#imInicio').value;
-  if (modo === 'replace') currentImpl.dados.atividades = p.atividades.map((t,i) => makeAtvFromTpl(t, i, start));
+  if (modo === 'replace') currentImpl.dados.atividades = p.atividades.map((t,i) => makeAtvFromTpl(t, i));
   else {
     const have = new Set(atv.map(a => (a.nome||'').trim().toLowerCase()));
     let maxId = atv.reduce((m,a) => Math.max(m, Number(a.id)||0), 0);
-    p.atividades.filter(t => !have.has(t.nome.trim().toLowerCase())).forEach(t => { const a = makeAtvFromTpl(t, 0, start); a.id = ++maxId; a.ordem = atv.length + 1; atv.push(a); });
+    p.atividades.filter(t => !have.has(t.nome.trim().toLowerCase())).forEach(t => { const a = makeAtvFromTpl(t, 0); a.id = ++maxId; a.ordem = atv.length + 1; atv.push(a); });
   }
   sel.dataset.prev = sel.value;
   applyProdutoExtras(p);
@@ -2253,16 +2319,16 @@ function renderProdEditor(){
   box.innerHTML = `<label class="f" style="margin-bottom:12px">Nome do produto<input type="text" id="pdNome" value="${esc(prodDraft.nome)}"></label>
     <div class="pd-dias"><label class="f">Dias remotos (padrão)<input type="number" min="0" step="1" id="pdRem" value="${prodDraft.diasRem ?? ''}"></label>
       <label class="f">Dias presenciais (padrão)<input type="number" min="0" step="1" id="pdPres" value="${prodDraft.diasPres ?? ''}"></label></div>
-    <p class="cfgp" style="font-size:13px">D+ é o dia útil do projeto em que a atividade começa (D+0 é o dia de início). Duração é a quantidade de dias úteis. Atividades no mesmo dia podem ter o mesmo D+.</p>
-    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Dias prev.</span><span>D+</span><span>Duração</span><span>Modalidade</span><span></span></div>
+    <p class="cfgp" style="font-size:13px">As atividades são encaixadas em sequência a partir da data de início, usando o tempo do catálogo (Configurações > Catálogo de atividades). Marque "Paralelo" para a atividade começar junto com a anterior sem empurrar as seguintes. O encerramento do projeto vem dos dias remotos + presenciais.</p>
+    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Dias prev.</span><span>Tempo</span><span>Paralelo</span><span>Modalidade</span><span></span></div>
     ${list.map((t,i) => `<div class="pa-row" data-i="${i}">
       <span class="ord" style="white-space:nowrap">${i+1}<span class="ordb"><button type="button" data-pmv="-1" ${i===0?'disabled':''} aria-label="Subir">▲</button><button type="button" data-pmv="1" ${i===n-1?'disabled':''} aria-label="Descer">▼</button></span></span>
       <input type="text" list="atvSug" data-pf="nome" value="${esc(t.nome)}" placeholder="Atividade do catálogo">
       <select data-pf="resp">${opt(RESP_OPTS, t.resp || 'Cittati')}</select>
       <input type="number" min="0" step="1" data-pf="prev" value="${t.prev ?? 1}">
       <input type="number" min="0" step="0.5" data-pf="diasPrev" value="${t.diasPrev ?? 0}">
-      <input type="number" min="0" step="1" data-pf="offset" value="${t.offset ?? ''}" placeholder="—" title="Dia útil de início (D+)">
-      <input type="number" min="1" step="1" data-pf="dur" value="${t.dur ?? 1}" title="Duração em dias úteis">
+      <span style="text-align:center;font-size:13px" title="Tempo do catálogo">${tempoCat(t.nome) != null ? String(tempoCat(t.nome)).replace('.',',') + ' d' : '<span style=\'color:#9A4A00\'>sem tempo</span>'}</span>
+      <label style="display:flex;justify-content:center"><input type="checkbox" data-pf="paralelo" ${t.paralelo ? 'checked' : ''} aria-label="Em paralelo com a anterior"></label>
       <select data-pf="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'], t.modalidade)}</select>
       <button type="button" class="b-del" data-prm aria-label="Remover atividade" title="Remover">×</button></div>`).join('')}
     <button type="button" class="b-add" id="btnPdAdd">+ Adicionar atividade</button>
@@ -2276,16 +2342,16 @@ $('#prodEditor').addEventListener('input', e => {
   if (e.target.id === 'pdRem' || e.target.id === 'pdPres'){ prodDraft[e.target.id === 'pdRem' ? 'diasRem' : 'diasPres'] = e.target.value === '' ? null : Math.round(Number(e.target.value)); return; }
   const f = e.target.dataset.pf; if (!f) return;
   const t = prodDraft.atividades[e.target.closest('[data-i]').dataset.i];
-  if (f === 'offset') t.offset = e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value)));
-  else if (f === 'dur') t.dur = Math.max(1, Math.round(Number(e.target.value)) || 1);
+  if (f === 'paralelo') t.paralelo = e.target.checked;
   else t[f] = (f === 'prev' || f === 'diasPrev') ? Number(e.target.value) || 0 : e.target.value;
 });
+$('#prodEditor').addEventListener('change', e => { if (e.target.dataset.pf === 'nome') renderProdEditor(); });
 $('#prodEditor').addEventListener('click', async e => {
   const L = prodDraft?.atividades;
   const mv = e.target.closest('[data-pmv]');
   if (mv){ const i = Number(mv.closest('[data-i]').dataset.i), j = i + Number(mv.dataset.pmv); [L[i], L[j]] = [L[j], L[i]]; renderProdEditor(); return; }
   if (e.target.closest('[data-prm]')){ L.splice(Number(e.target.closest('[data-i]').dataset.i), 1); renderProdEditor(); return; }
-  if (e.target.id === 'btnPdAdd'){ L.push({ nome:'', resp:'Cittati', prev:1, diasPrev:0, modalidade:'', offset: L.length ? (L[L.length-1].offset ?? null) : 0, dur:1 }); renderProdEditor();
+  if (e.target.id === 'btnPdAdd'){ L.push({ nome:'', resp:'Cittati', prev:1, diasPrev:0, modalidade:'', paralelo:false }); renderProdEditor();
     const rows = $('#prodEditor').querySelectorAll('[data-pf=nome]'); rows[rows.length-1].focus(); return; }
   if (e.target.id === 'btnPdImport'){
     if (!impls.length) await loadImpl();
@@ -2296,10 +2362,8 @@ $('#prodEditor').addEventListener('click', async e => {
     if (!v) return;
     const r = impls.find(x => x.id === v);
     const atvs = [...r.dados.atividades].sort((a,b) => (a.ordem||0)-(b.ordem||0));
-    const base = r.dados.cliente?.inicio || atvs.map(a => a.inicio).filter(Boolean).sort()[0] || '';
     prodDraft.atividades = atvs.map(a => ({ nome:a.nome, resp:a.resp || 'Cittati', prev:Number(a.prev)||1, diasPrev:Number(a.diasPrev)||0, modalidade:a.modalidade || '',
-      offset: base && a.inicio ? Math.max(0, bdDiff(base, a.inicio)) : null,
-      dur: a.inicio ? Math.max(1, bdDiff(a.inicio, a.fim || a.inicio) + 1) : 1 }));
+      paralelo: !!a.paralelo }));
     const ck = r.dados.checklist || {};
     if (ck.diasRemPrev !== '' && ck.diasRemPrev != null) prodDraft.diasRem = Number(ck.diasRemPrev);
     if (ck.diasPresPrev !== '' && ck.diasPresPrev != null) prodDraft.diasPres = Number(ck.diasPresPrev);
