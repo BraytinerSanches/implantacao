@@ -315,6 +315,10 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 .os-sum dt{color:var(--muted);font-size:12px;margin-top:6px}
 .os-sum dd{margin:0;font-weight:600}
 .os-warn{background:#FFF1E0;color:#7A3D00;border-radius:6px;padding:8px 12px;font-size:13px;margin-top:10px}
+.ferrow{display:grid;grid-template-columns:120px 90px 1fr 34px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ferrow small{color:var(--muted)}
+.pd-dias{display:grid;grid-template-columns:repeat(2,minmax(140px,200px));gap:10px;margin-bottom:12px}
+input.dt-warn{border-color:#E8A300!important;background:#FFF6DD!important}
 .chamado-card{display:flex;gap:14px;flex-wrap:wrap;padding:12px 16px}
 .prod-layout{display:grid;grid-template-columns:280px 1fr;gap:20px}
 @media (max-width:900px){.prod-layout{grid-template-columns:1fr}}
@@ -322,7 +326,7 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 .prod-item button.sel{flex:1;text-align:left;background:var(--field);border:1px solid var(--line);color:var(--ink);font-weight:600}
 .prod-item button.sel.active{border-color:var(--orange);box-shadow:inset 3px 0 0 var(--orange)}
 .prod-item small{color:var(--muted);font-weight:500;margin-left:6px}
-.pa-row{display:grid;grid-template-columns:58px 1fr 110px 80px 80px 116px 34px;gap:6px;align-items:center;margin-bottom:6px}
+.pa-row{display:grid;grid-template-columns:58px 1fr 104px 64px 64px 72px 72px 108px 34px;gap:6px;align-items:center;margin-bottom:6px}
 .pa-row.h{font-size:12px;color:var(--muted);font-weight:600}
 .pa-row .ordb{margin:0}
 @media (max-width:900px){.pa-row{grid-template-columns:44px 1fr 1fr}}
@@ -667,6 +671,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-ct="cat">Catálogo de atividades</button>
     <button type="button" data-ct="chk">Checklist</button>
     <button type="button" data-ct="prod">Produtos</button>
+    <button type="button" data-ct="fer">Feriados</button>
   </div>
   <div id="cfgUsers">
   <div id="storageCard"></div>
@@ -700,6 +705,19 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <p class="cfgp">Itens que aparecem no checklist de todas as implantações. Ao vincular uma atividade, o item vira "Sim" automaticamente quando essa atividade estiver Concluída na implantação. Itens sem vínculo são marcados manualmente.</p>
       <div id="chkCfgList"></div>
       <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
+    </div>
+  </div>
+  <div id="cfgFer" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Feriados</h3>
+      <p class="cfgp">Datas que não contam como dia útil no cálculo automático das atividades (sábados e domingos nunca contam). Os feriados nacionais já vêm cadastrados; inclua aqui os estaduais e municipais quando precisar.</p>
+      <div class="cadrow" style="grid-template-columns:170px 1fr auto;border:0;margin-bottom:10px">
+        <input type="date" id="ferData" aria-label="Data do feriado">
+        <input type="text" id="ferNome" placeholder="Nome (ex.: Aniversário de São Paulo)" aria-label="Nome do feriado">
+        <button type="button" class="b-main" id="btnAddFer">Adicionar</button>
+      </div>
+      <label class="f" style="max-width:200px;margin-bottom:10px">Ano<select id="ferAno"></select></label>
+      <div id="ferList"></div>
     </div>
   </div>
   <div id="cfgProd" hidden>
@@ -1290,7 +1308,7 @@ function openImpl(id){
   $('#imNome').value = c.nome || r?.cliente || ''; setImplAnalista(c.cittati || '');
   $('#imCliente').value = c.cliente || ''; setImplProduto((c.produtos||[]).join(' + '));
   $('#imChamado').value = currentImpl.dados.chamado || '';
-  $('#imCoord').value = c.coordenador || ''; $('#imInicio').value = c.inicio || ''; $('#imFim').value = c.fim || '';
+  $('#imCoord').value = c.coordenador || ''; $('#imInicio').value = c.inicio || ''; $('#imInicio').dataset.prev = c.inicio || ''; $('#imFim').value = c.fim || '';
   $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
   $('#imProduto').value = c.produto || '';
   currentImpl.dados.checklist ||= { itens:{} };
@@ -1338,8 +1356,8 @@ function renderAtvTable(){
     <td><input type="number" min="0" step="1" data-f="real" value="${Number(a.real||0)}"></td>
     <td><input type="number" min="0" step="0.5" data-f="diasPrev" value="${Number(a.diasPrev||0)}"></td>
     <td><input type="number" min="0" step="0.5" data-f="diasReal" value="${Number(a.diasReal||0)}"></td>
-    <td><input type="date" data-f="inicio" value="${esc(a.inicio||'')}"></td>
-    <td><input type="date" data-f="fim" value="${esc(a.fim||'')}"></td>
+    <td><input type="date" data-f="inicio" value="${esc(a.inicio||'')}"${isNonBD(a.inicio) ? ' class="dt-warn" title="Fim de semana ou feriado"' : ''}></td>
+    <td><input type="date" data-f="fim" value="${esc(a.fim||'')}"${isNonBD(a.fim) ? ' class="dt-warn" title="Fim de semana ou feriado"' : ''}></td>
     <td class="pc" title="Calculado: Ativ. real ÷ Ativ. prevista">${pbar(Number(a.pct)||0)}</td>
     <td><select data-f="resp" class="${a.resp==='Cliente'?'r-cli':'r-cit'}">${opt(RESP_OPTS,a.resp)}</select></td>
     <td><select data-f="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'],a.modalidade)}</select></td>
@@ -1376,6 +1394,7 @@ $('#atvBody').addEventListener('input', e => {
     renderGroupsImpl(); }
   else if (f === 'diasPrev' || f === 'diasReal') a[f] = Math.max(0, parseFloat(String(el.value).replace(',','.')) || 0);
   else a[f] = el.value;
+  if (f === 'inicio' || f === 'fim'){ el.classList.toggle('dt-warn', isNonBD(el.value)); el.title = isNonBD(el.value) ? 'Fim de semana ou feriado' : ''; }
   if (f === 'status'){ el.className = STATUS_SEL[el.value] || 's-g'; renderGroupsImpl(); }
   if (f === 'resp'){ el.className = el.value === 'Cliente' ? 'r-cli' : 'r-cit'; renderGroupsImpl(); }
   if (f === 'nome'){ const c = catalogo.find(x => x.nome === el.value); a.catalogId = c ? c.id : null; if (c && c.descricao && !a.descricao) a.descricao = c.descricao; }
@@ -1406,12 +1425,13 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer';
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'cat'){ loadCatalog(); }
   else if (t === 'chk'){ renderChkCfg(); Promise.resolve(loadCatalog()).catch(() => {}).then(() => loadChecklistTpl()); }
   else if (t === 'prod'){ loadCatalog().then(loadProdutos); }
+  else if (t === 'fer'){ loadFeriados().then(renderFeriados); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
 
@@ -1804,7 +1824,9 @@ $('#osFileInput').addEventListener('change', async () => {
       <label class="f">Produto contratado (atividades padrão)<select id="osProd"><option value="">Nenhum (sem atividades padrão)</option>${opt(produtos.map(p => p.nome), sug)}</select></label>
       <label class="f">Produto implantado<select id="osProdImpl"><option value="">Selecione</option>${opt(PRODUTOS, os.produtos.some(x => /fretamento|ics/i.test(x)) ? 'ICS' : '')}</select></label>
       <label class="f">Data de início<input type="date" id="osIni"></label>
-      <label class="f">Data de fim<input type="date" id="osFim"></label>
+      <label class="f">Data de fim <small id="osFimAuto" style="color:var(--blue)"></small><input type="date" id="osFim"></label>
+      <label class="f">Dias remotos (previsto)<input type="number" min="0" step="1" id="osDiasRem"></label>
+      <label class="f">Dias presenciais (previsto)<input type="number" min="0" step="1" id="osDiasPres"></label>
     </div>
     <dl class="os-sum">
       <dt>Produtos e serviços marcados na OS</dt><dd>${esc(os.produtos.join(', ') || '—')}</dd>
@@ -1816,8 +1838,25 @@ $('#osFileInput').addEventListener('change', async () => {
     ${sug ? '' : '<div class="os-warn">Não encontrei um produto cadastrado parecido com o da OS. Escolha um na lista para criar as atividades padrão, ou crie depois.</div>'}
     ${dup ? `<div class="os-warn">Já existe uma implantação chamada "${esc(dup.cliente)}". Se continuar, será criada outra.</div>` : ''}`;
   $('#osModal').hidden = false; $('#osNome').focus();
+  osFimManual = false; osSyncProduto(); osCalcFim();
 });
 $('#osCancel').addEventListener('click', () => { $('#osModal').hidden = true; osPending = null; });
+let osFimManual = false;
+function osSyncProduto(){
+  const p = produtos.find(x => x.nome === $('#osProd').value);
+  $('#osDiasRem').value = p?.diasRem ?? ''; $('#osDiasPres').value = p?.diasPres ?? '';
+}
+function osCalcFim(){
+  const p = produtos.find(x => x.nome === $('#osProd').value), ini = $('#osIni').value;
+  const fim = p && ini ? lastFim((p.atividades||[]).map(t => datesFromTpl(t, ini))) : '';
+  $('#osFimAuto').textContent = fim ? '(calculado: ' + fmtDate(fim) + ')' : '';
+  if (!osFimManual) $('#osFim').value = fim;
+}
+$('#osBody').addEventListener('change', e => {
+  if (e.target.id === 'osProd'){ osSyncProduto(); osCalcFim(); }
+  if (e.target.id === 'osIni') osCalcFim();
+  if (e.target.id === 'osFim') osFimManual = !!e.target.value;
+});
 $('#osCreate').addEventListener('click', async () => {
   if (!osPending) return;
   const nome = $('#osNome').value.trim(); if (!nome){ $('#osErr').textContent = 'Informe o nome do cliente.'; return; }
@@ -1825,7 +1864,10 @@ $('#osCreate').addEventListener('click', async () => {
   if (p && !catalogo.length) await loadCatalog();
   const head = { nome, cittati: $('#osAna').value, cliente: $('#osResp').value.trim(), produtos: prodName ? [prodName] : [],
     coordenador: $('#osCoord').value.trim(), produto: $('#osProdImpl').value, inicio: $('#osIni').value, fim: $('#osFim').value };
-  const dados = { cliente: head, atividades: p ? (p.atividades||[]).map(makeAtvFromTpl) : [], checklist: { itens:{} }, entrega: osToEntrega(osPending.os, head) };
+  const num = id => $(id).value === '' ? '' : Math.round(Number($(id).value));
+  const atividades = p ? (p.atividades||[]).map((t,i) => makeAtvFromTpl(t, i, head.inicio)) : [];
+  if (!head.fim) head.fim = lastFim(atividades);
+  const dados = { cliente: head, atividades, checklist: { itens:{}, diasRemPrev: num('#osDiasRem'), diasPresPrev: num('#osDiasPres') }, entrega: osToEntrega(osPending.os, head) };
   $('#osCreate').disabled = true; $('#osErr').textContent = '';
   try {
     const ins = await sb.from('implantacoes').insert({ cliente: nome, dados }).select('id').single();
@@ -2031,12 +2073,74 @@ function renderChecklistProgressOnly(){
   const p = chkProgress(); const pc = $('#tabChk .chk-head .pcell'); if (pc) pc.outerHTML = pbar(p); updateChkPct();
 }
 
+/* ---------- calendário de dias úteis ---------- */
+let feriados = [];            // [{ data:'AAAA-MM-DD', nome }]
+let ferSet = new Set();
+async function loadFeriados(){
+  const { data, error } = await sb.from('feriados').select('data,nome').order('data');
+  if (error){ console.warn('feriados', error.message); return; }
+  feriados = data || []; ferSet = new Set(feriados.map(f => f.data));
+  if (!$('#cfgFer').hidden) renderFeriados();
+}
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const isoD = v => new Date(v + 'T12:00:00');
+const isBD = d => d.getDay() !== 0 && d.getDay() !== 6 && !ferSet.has(iso(d));
+const nextBD = d => { const x = new Date(d); while (!isBD(x)) x.setDate(x.getDate() + 1); return x; };
+// soma n dias úteis (n pode ser negativo)
+function addBD(v, n){
+  let d = nextBD(isoD(v)); const step = n < 0 ? -1 : 1; let k = Math.abs(n);
+  while (k > 0){ d.setDate(d.getDate() + step); if (isBD(d)) k--; }
+  return iso(d);
+}
+// diferença em dias úteis de a até b
+function bdDiff(a, b){
+  let x = nextBD(isoD(a)), y = nextBD(isoD(b)), n = 0; const step = y >= x ? 1 : -1;
+  while (iso(x) !== iso(y)){ x.setDate(x.getDate() + step); if (isBD(x)) n += step; }
+  return n;
+}
+const isNonBD = v => v && !isBD(isoD(v));
+function datesFromTpl(t, start){
+  if (!start || t.offset == null || t.offset === '') return { inicio:'', fim:'' };
+  const ini = addBD(start, Number(t.offset) || 0);
+  return { inicio: ini, fim: addBD(ini, Math.max(1, Number(t.dur) || 1) - 1) };
+}
+const lastFim = atv => atv.map(a => a.fim || a.inicio).filter(Boolean).sort().pop() || '';
+
+/* ---------- feriados (configurações) ---------- */
+function renderFeriados(){
+  const anos = [...new Set(feriados.map(f => f.data.slice(0,4)))].sort();
+  const cur = $('#ferAno').value || String(new Date().getFullYear());
+  $('#ferAno').innerHTML = (anos.length ? anos : [cur]).map(a => `<option${a===cur?' selected':''}>${a}</option>`).join('');
+  const ano = $('#ferAno').value, DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  const list = feriados.filter(f => f.data.startsWith(ano));
+  $('#ferList').innerHTML = list.length ? list.map(f => `<div class="ferrow" data-d="${f.data}"><b>${fmtDate(f.data)}</b><small>${DIAS[isoD(f.data).getDay()]}</small><span>${esc(f.nome)}</span>
+    <button type="button" class="b-del" data-ferdel aria-label="Remover feriado" title="Remover">×</button></div>`).join('') : '<div class="empty">Nenhum feriado cadastrado neste ano.</div>';
+}
+$('#ferAno').addEventListener('change', renderFeriados);
+$('#btnAddFer').addEventListener('click', async () => {
+  const data = $('#ferData').value, nome = $('#ferNome').value.trim();
+  if (!data || !nome){ flash('Informe a data e o nome do feriado.'); return; }
+  if (ferSet.has(data)){ flash('Essa data já está cadastrada.'); return; }
+  const { error } = await sb.from('feriados').insert({ data, nome });
+  if (error){ flash('Erro: ' + error.message); return; }
+  $('#ferData').value = ''; $('#ferNome').value = '';
+  await loadFeriados(); $('#ferAno').value = data.slice(0,4); renderFeriados(); flash('Feriado adicionado.');
+});
+$('#ferList').addEventListener('click', async e => {
+  if (!e.target.closest('[data-ferdel]')) return;
+  const d = e.target.closest('[data-d]').dataset.d, f = feriados.find(x => x.data === d);
+  const v = await ask('Remover feriado?', `${fmtDate(d)} (${f.nome}) passará a contar como dia útil nos próximos cálculos.`, [['Cancelar','b-ghost',null],['Remover','b-danger','ok']]);
+  if (!v) return;
+  const { error } = await sb.from('feriados').delete().eq('data', d);
+  if (error) flash('Erro: ' + error.message); else { await loadFeriados(); renderFeriados(); }
+});
+
 /* ---------- produtos e atividades padrão ---------- */
 let produtos = [], prodSel = null, prodDraft = null;
 async function loadProdutos(){
-  const { data, error } = await sb.from('produtos').select('id,nome,atividades').order('nome');
+  const { data, error } = await sb.from('produtos').select('id,nome,atividades,dias_remotos,dias_presenciais').order('nome');
   if (error){ $('#prodList').innerHTML = `<div class="note">Produtos indisponíveis: ${esc(error.message)}</div>`; return; }
-  produtos = data; fillProdutoSelect(); if (!$('#cfgProd').hidden) renderProdList();
+  produtos = (data||[]).map(p => ({ ...p, diasRem: p.dias_remotos, diasPres: p.dias_presenciais })); fillProdutoSelect(); if (!$('#cfgProd').hidden) renderProdList();
 }
 function setImplProduto(v){
   const names = produtos.map(p => p.nome), s2 = $('#imProdutos');
@@ -2045,11 +2149,50 @@ function setImplProduto(v){
   s2.value = v || ''; s2.dataset.prev = s2.value;
 }
 function fillProdutoSelect(){ if (currentImpl) setImplProduto($('#imProdutos').value); }
-function makeAtvFromTpl(t, i){
-  const c = catalogo.find(x => x.nome === t.nome);
+function makeAtvFromTpl(t, i, start){
+  const c = catalogo.find(x => x.nome === t.nome), dt = datesFromTpl(t, start);
   return { id: i + 1, ordem: i + 1, nome: t.nome, catalogId: c ? c.id : null, prev: Number(t.prev) || 1, real: 0,
-    diasPrev: Number(t.diasPrev) || 0, diasReal: 0, inicio:'', fim:'', pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'', descricao: c?.descricao || '' };
+    diasPrev: Number(t.diasPrev) || 0, diasReal: 0, inicio: dt.inicio, fim: dt.fim, offset: t.offset ?? null, dur: Number(t.dur) || 1, pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'', descricao: c?.descricao || '' };
 }
+// fim do projeto e dias previstos do checklist a partir do produto (só preenche o que estiver vazio)
+function applyProdutoExtras(p){
+  const atv = currentImpl.dados.atividades || [], fim = lastFim(atv);
+  if (fim && !$('#imFim').value){ $('#imFim').value = fim; currentImpl.dados.cliente = readImplHeader(); applyEntregaLocks(); }
+  const ck = currentImpl.dados.checklist ||= { itens:{} };
+  if (p && (ck.diasRemPrev === '' || ck.diasRemPrev == null) && p.diasRem != null) ck.diasRemPrev = p.diasRem;
+  if (p && (ck.diasPresPrev === '' || ck.diasPresPrev == null) && p.diasPres != null) ck.diasPresPrev = p.diasPres;
+}
+// mudança na data de início do projeto
+$('#imInicio').addEventListener('focus', () => { $('#imInicio').dataset.prev = $('#imInicio').value; });
+$('#imInicio').addEventListener('change', async () => {
+  const el = $('#imInicio'), novo = el.value, antigo = el.dataset.prev || '';
+  if (novo && Number(novo.slice(0,4)) < 2000) return; // ainda digitando o ano
+  el.dataset.prev = novo;
+  if (!novo || !currentImpl) return;
+  const atv = currentImpl.dados.atividades || [];
+  const semData = atv.filter(a => !a.inicio && a.offset != null && a.offset !== '');
+  const comData = atv.filter(a => a.inicio && a.status !== 'Concluído' && !(Number(a.pct) >= 100));
+  let mudou = false;
+  if (semData.length){ semData.forEach(a => Object.assign(a, datesFromTpl(a, novo))); mudou = true; }
+  if (antigo && antigo !== novo && comData.length){
+    const shift = bdDiff(antigo, novo);
+    if (shift){
+      const v = await ask('Deslocar as atividades?', `A data de início mudou ${Math.abs(shift)} dia(s) útil(eis) ${shift > 0 ? 'para frente' : 'para trás'}. Deseja deslocar as ${comData.length} atividade(s) não concluída(s) na mesma proporção? Os seus ajustes manuais são mantidos, porque todas andam juntas.`,
+        [['Manter as datas','b-ghost',null],['Deslocar atividades','b-save','ok']]);
+      if (v){
+        comData.forEach(a => { a.inicio = addBD(a.inicio, shift); if (a.fim) a.fim = addBD(a.fim, shift); });
+        if ($('#imFim').value) $('#imFim').value = addBD($('#imFim').value, shift);
+        mudou = true;
+      }
+    }
+  }
+  if (mudou){
+    if (!$('#imFim').value){ const f = lastFim(atv); if (f) $('#imFim').value = f; }
+    currentImpl.dados.cliente = readImplHeader(); applyEntregaLocks(); refresh();
+    renderAtvTable(); renderGroupsImpl(); if (!$('#tabCro').hidden) renderCronograma(); implChanged();
+    flash('Datas das atividades atualizadas.');
+  }
+});
 $('#imProdutos').addEventListener('change', async () => {
   const sel = $('#imProdutos'), p = produtos.find(x => x.nome === sel.value);
   if (!p || !(p.atividades||[]).length) { sel.dataset.prev = sel.value; return; }
@@ -2060,14 +2203,17 @@ $('#imProdutos').addEventListener('change', async () => {
       [['Manter as atuais','b-ghost',null],['Adicionar as que faltam','b-save','add'],['Substituir todas','b-danger','replace']]);
     if (!modo){ sel.dataset.prev = sel.value; return; }
   }
-  if (modo === 'replace') currentImpl.dados.atividades = p.atividades.map(makeAtvFromTpl);
+  const start = $('#imInicio').value;
+  if (modo === 'replace') currentImpl.dados.atividades = p.atividades.map((t,i) => makeAtvFromTpl(t, i, start));
   else {
     const have = new Set(atv.map(a => (a.nome||'').trim().toLowerCase()));
     let maxId = atv.reduce((m,a) => Math.max(m, Number(a.id)||0), 0);
-    p.atividades.filter(t => !have.has(t.nome.trim().toLowerCase())).forEach(t => { const a = makeAtvFromTpl(t, 0); a.id = ++maxId; a.ordem = atv.length + 1; atv.push(a); });
+    p.atividades.filter(t => !have.has(t.nome.trim().toLowerCase())).forEach(t => { const a = makeAtvFromTpl(t, 0, start); a.id = ++maxId; a.ordem = atv.length + 1; atv.push(a); });
   }
   sel.dataset.prev = sel.value;
-  renderAtvTable(); renderGroupsImpl(); renderDatalist(); implChanged(); flash('Atividades padrão aplicadas.');
+  applyProdutoExtras(p);
+  renderAtvTable(); renderGroupsImpl(); renderDatalist(); implChanged();
+  flash(start ? 'Atividades padrão aplicadas com datas.' : 'Atividades padrão aplicadas. Informe a data de início para calcular as datas.');
 });
 
 function renderProdList(){
@@ -2105,13 +2251,18 @@ function renderProdEditor(){
   const list = prodDraft.atividades, n = list.length;
   const opt = (opts, v) => opts.map(o => `<option${o===v?' selected':''}>${o}</option>`).join('');
   box.innerHTML = `<label class="f" style="margin-bottom:12px">Nome do produto<input type="text" id="pdNome" value="${esc(prodDraft.nome)}"></label>
-    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Dias prev.</span><span>Modalidade</span><span></span></div>
+    <div class="pd-dias"><label class="f">Dias remotos (padrão)<input type="number" min="0" step="1" id="pdRem" value="${prodDraft.diasRem ?? ''}"></label>
+      <label class="f">Dias presenciais (padrão)<input type="number" min="0" step="1" id="pdPres" value="${prodDraft.diasPres ?? ''}"></label></div>
+    <p class="cfgp" style="font-size:13px">D+ é o dia útil do projeto em que a atividade começa (D+0 é o dia de início). Duração é a quantidade de dias úteis. Atividades no mesmo dia podem ter o mesmo D+.</p>
+    <div class="pa-row h"><span>Ordem</span><span>Atividade</span><span>Responsável</span><span>Ativ. prev.</span><span>Dias prev.</span><span>D+</span><span>Duração</span><span>Modalidade</span><span></span></div>
     ${list.map((t,i) => `<div class="pa-row" data-i="${i}">
       <span class="ord" style="white-space:nowrap">${i+1}<span class="ordb"><button type="button" data-pmv="-1" ${i===0?'disabled':''} aria-label="Subir">▲</button><button type="button" data-pmv="1" ${i===n-1?'disabled':''} aria-label="Descer">▼</button></span></span>
       <input type="text" list="atvSug" data-pf="nome" value="${esc(t.nome)}" placeholder="Atividade do catálogo">
       <select data-pf="resp">${opt(RESP_OPTS, t.resp || 'Cittati')}</select>
       <input type="number" min="0" step="1" data-pf="prev" value="${t.prev ?? 1}">
       <input type="number" min="0" step="0.5" data-pf="diasPrev" value="${t.diasPrev ?? 0}">
+      <input type="number" min="0" step="1" data-pf="offset" value="${t.offset ?? ''}" placeholder="—" title="Dia útil de início (D+)">
+      <input type="number" min="1" step="1" data-pf="dur" value="${t.dur ?? 1}" title="Duração em dias úteis">
       <select data-pf="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'], t.modalidade)}</select>
       <button type="button" class="b-del" data-prm aria-label="Remover atividade" title="Remover">×</button></div>`).join('')}
     <button type="button" class="b-add" id="btnPdAdd">+ Adicionar atividade</button>
@@ -2122,16 +2273,19 @@ function renderProdEditor(){
 }
 $('#prodEditor').addEventListener('input', e => {
   if (e.target.id === 'pdNome'){ prodDraft.nome = e.target.value; return; }
+  if (e.target.id === 'pdRem' || e.target.id === 'pdPres'){ prodDraft[e.target.id === 'pdRem' ? 'diasRem' : 'diasPres'] = e.target.value === '' ? null : Math.round(Number(e.target.value)); return; }
   const f = e.target.dataset.pf; if (!f) return;
   const t = prodDraft.atividades[e.target.closest('[data-i]').dataset.i];
-  t[f] = (f === 'prev' || f === 'diasPrev') ? Number(e.target.value) || 0 : e.target.value;
+  if (f === 'offset') t.offset = e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value)));
+  else if (f === 'dur') t.dur = Math.max(1, Math.round(Number(e.target.value)) || 1);
+  else t[f] = (f === 'prev' || f === 'diasPrev') ? Number(e.target.value) || 0 : e.target.value;
 });
 $('#prodEditor').addEventListener('click', async e => {
   const L = prodDraft?.atividades;
   const mv = e.target.closest('[data-pmv]');
   if (mv){ const i = Number(mv.closest('[data-i]').dataset.i), j = i + Number(mv.dataset.pmv); [L[i], L[j]] = [L[j], L[i]]; renderProdEditor(); return; }
   if (e.target.closest('[data-prm]')){ L.splice(Number(e.target.closest('[data-i]').dataset.i), 1); renderProdEditor(); return; }
-  if (e.target.id === 'btnPdAdd'){ L.push({ nome:'', resp:'Cittati', prev:1, diasPrev:0, modalidade:'' }); renderProdEditor();
+  if (e.target.id === 'btnPdAdd'){ L.push({ nome:'', resp:'Cittati', prev:1, diasPrev:0, modalidade:'', offset: L.length ? (L[L.length-1].offset ?? null) : 0, dur:1 }); renderProdEditor();
     const rows = $('#prodEditor').querySelectorAll('[data-pf=nome]'); rows[rows.length-1].focus(); return; }
   if (e.target.id === 'btnPdImport'){
     if (!impls.length) await loadImpl();
@@ -2141,15 +2295,22 @@ $('#prodEditor').addEventListener('click', async e => {
       [['Cancelar','b-ghost',null]].concat(opts.slice(0,6).map(r => [r.cliente || 'Sem nome','b-save', r.id])));
     if (!v) return;
     const r = impls.find(x => x.id === v);
-    prodDraft.atividades = [...r.dados.atividades].sort((a,b) => (a.ordem||0)-(b.ordem||0)).map(a => ({ nome:a.nome, resp:a.resp || 'Cittati', prev:Number(a.prev)||1, diasPrev:Number(a.diasPrev)||0, modalidade:a.modalidade || '' }));
+    const atvs = [...r.dados.atividades].sort((a,b) => (a.ordem||0)-(b.ordem||0));
+    const base = r.dados.cliente?.inicio || atvs.map(a => a.inicio).filter(Boolean).sort()[0] || '';
+    prodDraft.atividades = atvs.map(a => ({ nome:a.nome, resp:a.resp || 'Cittati', prev:Number(a.prev)||1, diasPrev:Number(a.diasPrev)||0, modalidade:a.modalidade || '',
+      offset: base && a.inicio ? Math.max(0, bdDiff(base, a.inicio)) : null,
+      dur: a.inicio ? Math.max(1, bdDiff(a.inicio, a.fim || a.inicio) + 1) : 1 }));
+    const ck = r.dados.checklist || {};
+    if (ck.diasRemPrev !== '' && ck.diasRemPrev != null) prodDraft.diasRem = Number(ck.diasRemPrev);
+    if (ck.diasPresPrev !== '' && ck.diasPresPrev != null) prodDraft.diasPres = Number(ck.diasPresPrev);
     renderProdEditor(); return;
   }
   if (e.target.id === 'btnPdSave'){
     const nome = prodDraft.nome.trim(); if (!nome){ flash('Informe o nome do produto.'); return; }
     const atividades = prodDraft.atividades.filter(t => (t.nome||'').trim()).map(t => ({ ...t, nome: t.nome.trim() }));
-    const { error } = await sb.from('produtos').update({ nome, atividades }).eq('id', prodDraft.id);
+    const { error } = await sb.from('produtos').update({ nome, atividades, dias_remotos: prodDraft.diasRem ?? null, dias_presenciais: prodDraft.diasPres ?? null }).eq('id', prodDraft.id);
     if (error){ flash('Erro: ' + error.message); return; }
-    const p = produtos.find(x => x.id === prodDraft.id); p.nome = nome; p.atividades = atividades; prodDraft = JSON.parse(JSON.stringify(p));
+    const p = produtos.find(x => x.id === prodDraft.id); p.nome = nome; p.atividades = atividades; p.diasRem = prodDraft.diasRem ?? null; p.diasPres = prodDraft.diasPres ?? null; prodDraft = JSON.parse(JSON.stringify(p));
     renderProdList(); renderProdEditor(); fillProdutoSelect(); flash('Produto salvo.');
   }
 });
@@ -2422,7 +2583,7 @@ if (sb){
   sb.auth.onAuthStateChange((event, session) => {
     if (session?.user){
       $('#userEmail').textContent = session.user.email;
-      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadProdutos(); loadCatalog();
+      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadProdutos(); loadCatalog(); loadFeriados();
       if (document.body.dataset.screen === 'login'){ show('impl'); loadImpl(); }
     } else {
       currentId = null; records = []; isAdmin = false; myId = null; document.body.classList.remove('is-admin'); closeForm(); updateDeleteBtn(); fillState({}); markClean(); refresh(); impls = []; currentImpl = null;
