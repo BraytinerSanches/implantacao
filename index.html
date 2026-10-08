@@ -319,6 +319,7 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 .tcount .bar2 i{position:absolute;inset:0 auto 0 0;background:var(--orange)}
 .tcount.over .bar2 i{background:#B3261E}.tcount.ok .bar2 i{background:#2E9E62}
 .pa-row input[data-pt]{text-align:center}
+body.no-dias #tempoCard, body.no-dias #schedInfo, body.no-dias #imPeriodo{display:none!important}
 .sched-ok{color:#1F6B47}.sched-warn{color:#9A4A00;font-weight:600}
 .os-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
 .os-line span{color:var(--muted)}
@@ -546,6 +547,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <div style="margin-left:auto;align-self:end;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="schedInfo" style="font-size:13px"></span>
       <button type="button" class="b-alt" id="btnRecalc" style="color:var(--ink)">Recalcular datas</button>
+      <button type="button" class="b-alt" id="btnDias" style="color:var(--ink)" aria-pressed="true">Ocultar contagem de dias</button>
     </div>
   </div>
   <div id="tempoCard"></div>
@@ -1603,7 +1605,7 @@ async function captureImpl(){
   return html2canvas(el, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor, useCORS:true,
     windowWidth: Math.max(1400, el.scrollWidth + 80),
     onclone: d => { d.querySelectorAll('.ls-wrap').forEach(w => { w.style.overflow = 'visible'; }); const v = d.getElementById('implDetView'); v.style.maxWidth = 'none';
-      d.querySelectorAll('.det-bar button, .det-bar .autosave, .det-bar .pending, #btnAddAtv, .b-del, .ordb, #implMsg').forEach(x => x.style.display = 'none');
+      d.querySelectorAll('.det-bar button, .det-bar .autosave, .det-bar .pending, #btnAddAtv, .b-del, .ordb, #implMsg, #tempoCard, #schedInfo, #imPeriodo, #btnRecalc, #btnDias').forEach(x => x.style.display = 'none');
       d.querySelectorAll('#implTabs button:not(.active)').forEach(x => x.style.display = 'none');
       // troca os campos por texto para a imagem ficar legível
       d.querySelectorAll('#implDetView input, #implDetView select, #implDetView textarea').forEach(x => {
@@ -2286,6 +2288,15 @@ function applyProdutoExtras(p){
   setFimByContrato(); if (!$('#tabChk').hidden) renderChecklist(); implChanged();
 }));
 $('#imFim').addEventListener('change', () => { $('#imFimInfo').textContent = ''; updatePeriodoInfo(); });
+// mostrar/ocultar a contagem de dias (preferência guardada neste navegador)
+function setDiasVisiveis(on){
+  document.body.classList.toggle('no-dias', !on);
+  $('#btnDias').textContent = on ? 'Ocultar contagem de dias' : 'Mostrar contagem de dias';
+  $('#btnDias').setAttribute('aria-pressed', String(on));
+  try { localStorage.setItem('mostrarDias', on ? '1' : '0'); } catch {}
+}
+$('#btnDias').addEventListener('click', () => setDiasVisiveis(document.body.classList.contains('no-dias')));
+{ let v = '1'; try { v = localStorage.getItem('mostrarDias') ?? '1'; } catch {} setDiasVisiveis(v !== '0'); }
 $('#btnRecalc').addEventListener('click', async () => {
   const start = $('#imInicio').value;
   if (!start){ flash('Informe a data de início do projeto.'); $('#imInicio').focus(); return; }
