@@ -1410,7 +1410,7 @@ function cfgTab(t){
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'cat'){ loadCatalog(); }
-  else if (t === 'chk'){ loadCatalog().then(loadChecklistTpl); }
+  else if (t === 'chk'){ renderChkCfg(); Promise.resolve(loadCatalog()).catch(() => {}).then(() => loadChecklistTpl()); }
   else if (t === 'prod'){ loadCatalog().then(loadProdutos); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
@@ -1902,22 +1902,38 @@ function implTab(t){
   $('#tabAtv').hidden = t !== 'atv'; $('#tabChk').hidden = t !== 'chk'; $('#tabEnt').hidden = t !== 'ent'; $('#tabCro').hidden = t !== 'cro';
   $('#btnImplCsv').hidden = t !== 'atv'; $('#btnCroXlsx').hidden = t !== 'cro';
   if (t === 'cro') renderCronograma();
-  if (t === 'chk') renderChecklist();
+  if (t === 'chk' && currentImpl) renderChecklist();
   if (t === 'ent'){ applyEntregaLocks(); refresh(); requestAnimationFrame(fitPreview); }
 }
 document.querySelectorAll('#implTabs button').forEach(b => b.addEventListener('click', () => implTab(b.dataset.tab)));
 
 /* ---------- checklist ---------- */
 const SECOES = ['Pasta do Teams','Informações complementares','Power Apps','RDV'];
-let chkTpl = [];
-async function loadChecklistTpl(){
-  const { data, error } = await sb.from('checklist_itens').select('id,secao,texto,ordem,atividade').order('ordem');
-  if (error){ chkTpl = null; $('#chkTabPct').textContent = ''; if (!$('#tabChk').hidden) renderChecklist(error.message); return; }
-  chkTpl = data; updateChkPct(); if (!$('#tabChk').hidden) renderChecklist();
-  if (!$('#cfgChk').hidden) renderChkCfg();
+let chkTpl; // undefined = carregando, null = erro, [] = sem itens
+let chkLoading = null;
+function loadChecklistTpl(){
+  // evita várias leituras simultâneas (abrir implantação + trocar de aba ao mesmo tempo)
+  if (!chkLoading) chkLoading = loadChecklistTplNow().finally(() => { chkLoading = null; });
+  return chkLoading;
+}
+// o checklist da implantação só está na tela quando a implantação está aberta na aba Checklist
+const chkNaTela = () => document.body.dataset.screen === 'implDet' && !!currentImpl && !$('#tabChk').hidden;
+const cfgChkNaTela = () => document.body.dataset.screen === 'config' && !$('#cfgChk').hidden;
+async function loadChecklistTplNow(){
+  let erro = null;
+  try {
+    const { data, error } = await sb.from('checklist_itens').select('id,secao,texto,ordem,atividade').order('ordem');
+    if (error) throw error;
+    chkTpl = data || [];
+  } catch(e){ chkTpl = null; erro = e.message || String(e); console.error('checklist', e); }
+  // cada tela é atualizada separadamente: um erro numa não impede a outra
+  try { if (cfgChkNaTela()) renderChkCfg(erro); } catch(e){ console.error(e); }
+  try { if (currentImpl) updateChkPct(); else $('#chkTabPct').textContent = ''; } catch(e){ console.error(e); }
+  try { if (chkNaTela()) renderChecklist(erro); } catch(e){ console.error(e); }
 }
 function chkItemValue(item){
-  const st = currentImpl.dados.checklist.itens[item.id] || {};
+  const ck = currentImpl.dados.checklist ||= { itens:{} }; ck.itens ||= {};
+  const st = ck.itens[item.id] || {};
   if (item.atividade === '__chamado'){
     const n = (currentImpl.dados.chamado || '').trim();
     return { feito: n ? 'Sim' : 'Não', auto:true, atv:'Nº do chamado', obs: n || st.obs || '', lockObs: !!n };
@@ -1929,7 +1945,7 @@ function chkItemValue(item){
   return { feito: st.feito || 'Não', auto:false, obs: st.obs || '' };
 }
 function chkProgress(){
-  if (!chkTpl || !chkTpl.length) return 0;
+  if (!chkTpl || !chkTpl.length || !currentImpl) return 0;
   return Math.round(chkTpl.filter(i => chkItemValue(i).feito === 'Sim').length / chkTpl.length * 100);
 }
 function updateChkPct(){ $('#chkTabPct').textContent = chkTpl && chkTpl.length ? chkProgress() + '%' : ''; }
@@ -1941,7 +1957,9 @@ const nfmt = v => (Math.round(v*10)/10).toLocaleString('pt-BR');
 const diffCls = v => v > 0 ? 'dpos' : v < 0 ? 'dneg' : '';
 function renderChecklist(err){
   const box = $('#tabChk');
+  if (chkTpl === undefined){ box.innerHTML = '<div class="empty">Carregando checklist…</div>'; loadChecklistTpl(); return; }
   if (err || chkTpl === null){ box.innerHTML = `<div class="note">Checklist indisponível${err ? ': ' + esc(err) : ''}. Confira se o script do checklist foi executado no Supabase.</div>`; return; }
+  currentImpl.dados.checklist ||= { itens:{} }; currentImpl.dados.checklist.itens ||= {};
   const c = readImplHeader(), ck = currentImpl.dados.checklist, prog = chkProgress();
   const brl = v => v === '' || v == null ? '' : v;
   const custoDif = (Number(ck.custoPrev)||0) - (Number(ck.custoReal)||0);
@@ -2137,9 +2155,11 @@ $('#prodEditor').addEventListener('click', async e => {
 });
 
 /* ---------- configurações: itens do checklist ---------- */
-function renderChkCfg(){
+function renderChkCfg(erro){
   const box = $('#chkCfgList');
-  if (chkTpl === null){ box.innerHTML = '<div class="note">Checklist indisponível. Confira se o script do checklist foi executado no Supabase.</div>'; return; }
+  if (chkTpl === undefined){ box.innerHTML = '<div class="empty">Carregando…</div>'; return; }
+  if (chkTpl === null){ box.innerHTML = `<div class="note">Não foi possível carregar os itens do checklist${erro ? ': ' + esc(erro) : ''}.</div>`; return; }
+  if (!chkTpl.length){ box.innerHTML = '<div class="empty">Nenhum item cadastrado. Use "+ Adicionar item".</div>'; return; }
   const atvNames = [...new Set(catalogo.map(c => c.nome))].sort((a,b) => a.localeCompare(b,'pt-BR'));
   const secs = SECOES.concat([...new Set(chkTpl.map(i => i.secao))].filter(x => !SECOES.includes(x)));
   box.innerHTML = `<div class="cfgchk h"><span>Ordem</span><span>Seção</span><span>Item</span><span>Atividade vinculada</span><span></span></div>` +
@@ -2166,13 +2186,19 @@ $('#chkCfgList').addEventListener('click', async e => {
   const { error } = await sb.from('checklist_itens').delete().eq('id', it.id);
   if (error) flash('Erro: ' + error.message); else { chkTpl = chkTpl.filter(x => x !== it); renderChkCfg(); }
 });
-$('#btnAddChkItem').addEventListener('click', async () => {
-  const ordem = chkTpl.filter(i => i.secao === SECOES[0]).reduce((m,i) => Math.max(m, i.ordem), 0) + 1;
-  const item = { secao: SECOES[0], texto: 'Novo item', ordem, atividade: null };
-  const { data, error } = await sb.from('checklist_itens').insert(item).select('id').single();
-  if (error){ flash('Erro: ' + error.message); return; }
-  chkTpl.push({ id:data.id, ...item }); renderChkCfg();
-  const inp = $(`#chkCfgList [data-iid="${data.id}"] input[data-cc=texto]`); inp.focus(); inp.select();
+$('#btnAddChkItem').addEventListener('click', () => {
+  if (!Array.isArray(chkTpl)) return;
+  formBox('Novo item do checklist', 'O item aparece no checklist de todas as implantações, na seção Pasta do Teams (dá para mudar a seção depois).',
+    [{ id:'texto', label:'Texto do item', type:'text', auto:'off' }], 'Adicionar', async v => {
+      const texto = (v.texto || '').trim();
+      if (!texto) return 'Informe o texto do item.';
+      if (chkTpl.some(i => norm(i.texto) === norm(texto))) return 'Já existe um item com esse texto.';
+      const ordem = chkTpl.filter(i => i.secao === SECOES[0]).reduce((m,i) => Math.max(m, i.ordem), 0) + 1;
+      const item = { secao: SECOES[0], texto, ordem, atividade: null };
+      const { data, error } = await sb.from('checklist_itens').insert(item).select('id').single();
+      if (error) return 'Erro: ' + error.message;
+      chkTpl.push({ id:data.id, ...item }); renderChkCfg(); flash('Item adicionado.'); return null;
+    });
 });
 
 function fileSlug(t){ return (t || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,''); }
