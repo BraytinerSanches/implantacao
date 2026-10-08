@@ -300,12 +300,15 @@ table.cro td.dt{white-space:nowrap;text-align:center}
 table.cro td.wk{width:34px;min-width:34px;padding:0;position:relative}
 table.cro td.wk.on::after{content:"";position:absolute;inset:7px 0;background:#FFD400}
 table.cro td.wk.on.done::after{background:#2E9E62}
+table.cro td.wk.on.fp::after{background:repeating-linear-gradient(45deg,#7FB6DD,#7FB6DD 4px,#CFE4F3 4px,#CFE4F3 8px)}
+table.cro td.wk.on.fp.done::after{background:repeating-linear-gradient(45deg,#2E9E62,#2E9E62 4px,#BFE3CF 4px,#BFE3CF 8px)}
 table.cro td.wk.today{box-shadow:inset 2px 0 0 #E00000}
 table.cro textarea{font:13px/1.35 "Barlow",sans-serif;color:var(--ink);background:transparent;border:1px dashed transparent;border-radius:4px;padding:3px 4px;width:100%;min-width:260px;resize:none;overflow:hidden;display:block;min-height:0}
 table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);background:var(--field)}
 .cro-leg{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin:8px 0 0;flex-wrap:wrap}
 .cro-leg i{display:inline-block;width:18px;height:10px;vertical-align:middle;margin-right:5px;border-radius:2px}
-.catrow.wide{grid-template-columns:minmax(200px,1fr) 110px 2fr 34px}
+.catrow.wide{grid-template-columns:minmax(200px,1fr) 110px 90px 2fr 34px}
+.catrow.wide label.fp{display:flex;justify-content:center}
 .tcount{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--grey);border-radius:8px;padding:10px 14px;margin-bottom:12px}
 .tcount.ok{border-left-color:#2E9E62}.tcount.under{border-left-color:var(--blue)}.tcount.over{border-left-color:#B3261E}
 .tcount div span{display:block;font-size:11.5px;color:var(--muted)}
@@ -347,6 +350,7 @@ input.dt-warn{border-color:#E8A300!important;background:#FFF6DD!important}
 .itabs button{background:transparent;border:0;border-radius:0;color:var(--muted);padding:12px 12px 10px;border-bottom:3px solid transparent}
 .itabs button.active{color:var(--ink);border-bottom-color:var(--orange)}
 table.et td{padding:5px 4px;vertical-align:middle}
+table.et tr.row-fp td{background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(5,112,183,.06) 8px,rgba(5,112,183,.06) 16px)}
 table.et th{padding:9px 6px;white-space:nowrap}
 table.et input,table.et select{padding:5px 6px;font-size:13.5px}
 table.et input[type=number]{width:70px;text-align:center}
@@ -551,7 +555,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <div id="itAtv" style="padding:0 16px 14px">
       <div class="ls-wrap"><table class="ls-table et" id="atvTable"><thead><tr>
         <th>Ordem</th><th>Atividade</th><th>Ativ. prev.</th><th>Ativ. real</th><th>Dias prev.</th><th>Dias real</th>
-        <th>Início</th><th>Fim</th><th>% concl.</th><th>Responsável</th><th>Modalidade</th><th>Status</th><th class="c-obs">Observação</th><th></th>
+        <th>Início</th><th>Fim</th><th>% concl.</th><th>Responsável</th><th>Modalidade</th><th title="Fora do prazo do contrato: não entra na contagem de dias">Fora do prazo</th><th>Status</th><th class="c-obs">Observação</th><th></th>
       </tr></thead><tbody id="atvBody"></tbody></table></div>
       <button type="button" class="b-add" id="btnAddAtv">+ Adicionar atividade</button>
     </div>
@@ -1371,7 +1375,7 @@ function sortAtv(){
 function renderAtvTable(){
   const atv = sortAtv(), n = atv.length;
   const opt = (opts, v) => opts.map(o => `<option${o===v?' selected':''}>${o}</option>`).join('');
-  $('#atvBody').innerHTML = n ? atv.map((a,i) => `<tr data-id="${a.id}">
+  $('#atvBody').innerHTML = n ? atv.map((a,i) => `<tr data-id="${a.id}"${a.foraPrazo ? ' class="row-fp"' : ''}>
     <td class="ord">${i+1}<span class="ordb"><button type="button" data-mv="-1" ${i===0?'disabled':''} aria-label="Mover para cima">▲</button><button type="button" data-mv="1" ${i===n-1?'disabled':''} aria-label="Mover para baixo">▼</button></span></td>
     <td><input type="text" list="atvSug" data-f="nome" value="${esc(a.nome||'')}" placeholder="Nome da atividade" title="${esc(a.nome||'')}"></td>
     <td><input type="number" min="0" step="1" data-f="prev" value="${Number(a.prev||0)}"></td>
@@ -1383,10 +1387,11 @@ function renderAtvTable(){
     <td class="pc" title="Calculado: Ativ. real ÷ Ativ. prevista">${pbar(Number(a.pct)||0)}</td>
     <td><select data-f="resp" class="${a.resp==='Cliente'?'r-cli':'r-cit'}">${opt(RESP_OPTS,a.resp)}</select></td>
     <td><select data-f="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'],a.modalidade)}</select></td>
+    <td style="text-align:center"><input type="checkbox" data-f="foraPrazo" ${a.foraPrazo ? 'checked' : ''} aria-label="Fora do prazo do contrato"></td>
     <td><select data-f="status" class="${STATUS_SEL[a.status]||'s-g'}">${opt(STATUS_OPTS,a.status)}</select></td>
     <td><textarea rows="1" data-f="obs" placeholder="—">${esc(a.obs||'')}</textarea></td>
     <td><button type="button" class="b-del" data-del aria-label="Remover atividade" title="Remover atividade">×</button></td>
-  </tr>`).join('') : '<tr><td colspan="14" class="empty" style="border:0">Nenhuma atividade ainda. Clique em "+ Adicionar atividade".</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="15" class="empty" style="border:0">Nenhuma atividade ainda. Clique em "+ Adicionar atividade".</td></tr>';
   requestAnimationFrame(() => document.querySelectorAll('#atvBody textarea').forEach(grow));
 }
 function grow(t){ t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
@@ -1415,6 +1420,7 @@ $('#atvBody').addEventListener('input', e => {
     if (novo !== a.status){ a.status = novo; const ss = el.closest('tr').querySelector('[data-f=status]'); ss.value = novo; ss.className = STATUS_SEL[novo] || 's-g'; }
     renderGroupsImpl(); }
   else if (f === 'diasPrev' || f === 'diasReal') a[f] = Math.max(0, parseFloat(String(el.value).replace(',','.')) || 0);
+  else if (f === 'foraPrazo'){ a.foraPrazo = el.checked; el.closest('tr').classList.toggle('row-fp', el.checked); }
   else a[f] = el.value;
   if (f === 'inicio' || f === 'fim'){ el.classList.toggle('dt-warn', isNonBD(el.value)); el.title = isNonBD(el.value) ? 'Fim de semana ou feriado' : ''; }
   if (f === 'status'){ el.className = STATUS_SEL[el.value] || 's-g'; renderGroupsImpl(); }
@@ -1516,19 +1522,27 @@ $('#anaNew').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preven
 
 /* catálogo (compartilhado) */
 async function loadCatalog(){
-  const { data, error } = await sb.from('catalogo_atividades').select('id,nome,descricao,tempo').order('nome');
+  const { data, error } = await sb.from('catalogo_atividades').select('id,nome,descricao,tempo,fora_prazo').order('nome');
   if (!error){ catalogo = data; renderCatalog(); renderDatalist(); }
   else $('#catList').innerHTML = `<div class="note">Catálogo indisponível: ${esc(error.message)}</div>`;
 }
 function renderCatalog(){
-  $('#catList').innerHTML = catalogo.length ? '<div class="catrow wide" style="font-size:12px;color:var(--muted);font-weight:600"><span>Atividade</span><span>Tempo (dias úteis)</span><span>Descrição padrão (usada no Cronograma)</span><span></span></div>' + catalogo.map(c => `<div class="catrow wide" data-cid="${c.id}">
+  $('#catList').innerHTML = catalogo.length ? '<div class="catrow wide" style="font-size:12px;color:var(--muted);font-weight:600"><span>Atividade</span><span>Tempo (dias úteis)</span><span title="Não entra na contagem de dias do contrato">Fora do prazo</span><span>Descrição padrão (usada no Cronograma)</span><span></span></div>' + catalogo.map(c => `<div class="catrow wide" data-cid="${c.id}">
     <input type="text" value="${esc(c.nome)}" data-cat aria-label="Atividade do catálogo">
     <input type="number" min="0.5" step="0.5" value="${c.tempo ?? ''}" data-cattempo placeholder="—" aria-label="Tempo estimado em dias úteis">
+    <label class="fp"><input type="checkbox" data-catfp ${c.fora_prazo ? 'checked' : ''} aria-label="Fora do prazo do contrato"></label>
     <input type="text" value="${esc(c.descricao||'')}" data-catdesc placeholder="Descrição exibida no cronograma" aria-label="Descrição padrão">
     <button type="button" class="b-del" data-catdel aria-label="Remover do catálogo" title="Remover do catálogo">×</button>
   </div>`).join('') : '<div class="empty">Nenhum item no catálogo ainda.</div>';
 }
 $('#catList').addEventListener('change', async e => {
+  if (e.target.matches('[data-catfp]')){
+    const id = e.target.closest('[data-cid]').dataset.cid, v = e.target.checked;
+    const { error } = await sb.from('catalogo_atividades').update({ fora_prazo: v }).eq('id', id);
+    if (error){ flash('Erro: ' + error.message); e.target.checked = !v; return; }
+    const c = catalogo.find(x => String(x.id) === id); if (c) c.fora_prazo = v; flash(v ? 'Marcada como fora do prazo.' : 'Volta a contar no prazo.');
+    return;
+  }
   if (e.target.matches('[data-cattempo]')){
     const id = e.target.closest('[data-cid]').dataset.cid, v = e.target.value === '' ? null : Math.max(0.5, Math.round(Number(e.target.value) * 2) / 2);
     if (v !== null) e.target.value = v;
@@ -1560,7 +1574,7 @@ async function addCatalog(){
   if (catalogo.some(c => c.nome.toLowerCase() === nome.toLowerCase())){ flash('Essa atividade já está no catálogo.'); return; }
   const { data, error } = await sb.from('catalogo_atividades').insert({ nome }).select('id,nome').single();
   if (error){ flash('Erro: ' + error.message); return; }
-  catalogo.push({ id:data.id, nome, descricao:'', tempo:null }); catalogo.sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
+  catalogo.push({ id:data.id, nome, descricao:'', tempo:null, fora_prazo:false }); catalogo.sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
   $('#catNew').value = ''; renderCatalog(); renderDatalist(); $('#catNew').focus();
 }
 $('#btnAddCat').addEventListener('click', addCatalog);
@@ -1579,8 +1593,8 @@ function scheduleImplSave(){
 $('#btnImplCsv').addEventListener('click', async () => {
   const c = readImplHeader(), atv = sortAtv();
   const q = v => { v = String(v ?? ''); return /[";\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; };
-  const lines = [['Ordem','Atividade','Ativ. prev.','Ativ. real','Dias prev.','Dias real','Início','Fim','% concl.','Responsável','Modalidade','Status','Observação']]
-    .concat(atv.map(a => [a.ordem, a.nome, a.prev, a.real, String(a.diasPrev).replace('.',','), String(a.diasReal).replace('.',','), a.inicio?fmtDate(a.inicio):'', a.fim?fmtDate(a.fim):'', (a.pct||0)+'%', a.resp, a.modalidade||'', a.status, a.obs]));
+  const lines = [['Ordem','Atividade','Ativ. prev.','Ativ. real','Dias prev.','Dias real','Início','Fim','% concl.','Responsável','Modalidade','Fora do prazo','Status','Observação']]
+    .concat(atv.map(a => [a.ordem, a.nome, a.prev, a.real, String(a.diasPrev).replace('.',','), String(a.diasReal).replace('.',','), a.inicio?fmtDate(a.inicio):'', a.fim?fmtDate(a.fim):'', (a.pct||0)+'%', a.resp, a.modalidade||'', a.foraPrazo ? 'Sim' : '', a.status, a.obs]));
   const csv = '\ufeff' + lines.map(l => l.map(q).join(';')).join('\r\n');
   await save(`Implantacao_${fileSlug(c.nome)}.csv`, new Blob([csv], { type:'text/csv;charset=utf-8' })); flash('CSV exportado.');
 });
@@ -1714,9 +1728,9 @@ function renderCronograma(){
       <tbody>${atv.length ? atv.map((a,i) => `<tr data-id="${a.id}"><td class="num">${i+1}</td><td class="nm">${esc(a.nome||'—')}</td>
         <td class="dt">${a.inicio ? fmtDate(a.inicio) : '—'}</td><td class="dt">${a.fim ? fmtDate(a.fim) : '—'}</td><td class="dt">${esc(a.resp||'')}</td>
         <td><textarea rows="1" data-desc placeholder="Descrição da atividade">${esc(a.descricao||'')}</textarea></td>
-        ${weeks.map(w => `<td class="wk${inWeek(a,w) ? ' on' : ''}${inWeek(a,w) && (a.status === 'Concluído' || Number(a.pct) >= 100) ? ' done' : ''}${today >= w.from && today <= w.to ? ' today' : ''}"></td>`).join('')}</tr>`).join('')
+        ${weeks.map(w => `<td class="wk${inWeek(a,w) ? ' on' : ''}${a.foraPrazo ? ' fp' : ''}${inWeek(a,w) && (a.status === 'Concluído' || Number(a.pct) >= 100) ? ' done' : ''}${today >= w.from && today <= w.to ? ' today' : ''}"></td>`).join('')}</tr>`).join('')
         : `<tr><td colspan="${6 + weeks.length}" class="empty">Nenhuma atividade cadastrada.</td></tr>`}</tbody></table></div>
-    <div class="cro-leg"><span><i style="background:#FFD400"></i>Planejado</span><span><i style="background:#2E9E62"></i>Concluído</span><span><i style="background:#E00000;width:3px"></i>Semana atual</span>
+    <div class="cro-leg"><span><i style="background:#FFD400"></i>Planejado</span><span><i style="background:#2E9E62"></i>Concluído</span><span><i style="background:repeating-linear-gradient(45deg,#7FB6DD,#7FB6DD 4px,#CFE4F3 4px,#CFE4F3 8px)"></i>Fora do prazo do contrato (cliente)</span><span><i style="background:#E00000;width:3px"></i>Semana atual</span>
       ${weeks.length ? '' : '<span>Preencha as datas de início e fim para gerar a linha do tempo.</span>'}</div>
   </div>`;
   const regrow = () => document.querySelectorAll('#tabCro textarea').forEach(grow);
@@ -1754,7 +1768,9 @@ async function croXlsxBlob(){
     for (let c = 1; c <= 6 + weeks.length; c++){ const cell = ws.getCell(r, c); cell.border = box; cell.alignment = { vertical:'middle', wrapText:true, horizontal: c === 2 || c === 6 ? 'left' : 'center' }; }
     [1,2].forEach(c => { const cell = ws.getCell(r, c); cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:BLUE } }; cell.font = { color:{ argb:'FFFFFFFF' }, bold: c === 1 }; });
     [3,4].forEach(c => ws.getCell(r, c).numFmt = 'dd/mm/yyyy');
-    weeks.forEach((w, k) => { if (inWeek(a, w)) ws.getCell(r, 7 + k).fill = { type:'pattern', pattern:'solid', fgColor:{ argb: (a.status === 'Concluído' || Number(a.pct) >= 100) ? GREEN : YEL } }; });
+    weeks.forEach((w, k) => { if (inWeek(a, w)) ws.getCell(r, 7 + k).fill = a.foraPrazo
+      ? { type:'pattern', pattern:'lightUp', fgColor:{ argb: (a.status === 'Concluído' || Number(a.pct) >= 100) ? GREEN : 'FF5B9BD5' }, bgColor:{ argb:'FFDDEBF7' } }
+      : { type:'pattern', pattern:'solid', fgColor:{ argb: (a.status === 'Concluído' || Number(a.pct) >= 100) ? GREEN : YEL } }; });
     row.height = Math.max(20, Math.ceil((a.descricao || '').length / 70) * 15);
   });
   const buf = await wb.xlsx.writeBuffer();
@@ -2133,6 +2149,7 @@ function bdDiff(a, b){
 const isNonBD = v => v && !isBD(isoD(v));
 // tempo da atividade: o "Dias prev." da própria atividade; se vazio, o tempo do catálogo
 const tempoCat = nome => { const c = catalogo.find(x => norm(x.nome) === norm(nome)); return c && c.tempo ? Number(c.tempo) : null; };
+const foraCat = nome => { const c = catalogo.find(x => norm(x.nome) === norm(nome)); return !!(c && c.fora_prazo); };
 const tempoAtv = a => Number(a.diasPrev) > 0 ? Number(a.diasPrev) : (tempoCat(a.nome) || 1);
 // encaixa as atividades em sequência a partir do início, em meios-dias úteis.
 // "paralelo" começa junto com a atividade anterior e não empurra as seguintes.
@@ -2141,22 +2158,24 @@ function schedule(list, start, keep = () => false){
   let cur = 0, prevStart = 0;
   list.forEach(a => {
     const half = Math.max(1, Math.round(tempoAtv(a) * 2));
-    const st = a.paralelo ? prevStart : cur, en = st + half;
+    // fora do prazo: começa logo após a atividade anterior (ex.: o treinamento) e não empurra as seguintes
+    const st = a.foraPrazo ? cur : a.paralelo ? prevStart : cur, en = st + half;
     if (!keep(a)){ a.inicio = addBD(start, Math.floor(st / 2)); a.fim = addBD(start, Math.ceil(en / 2) - 1); }
+    if (a.foraPrazo) return;
     prevStart = st; if (!a.paralelo) cur = en;
   });
 }
 const contratoDias = () => { const ck = currentImpl?.dados.checklist || {}; return (parseInt(ck.diasRemPrev) || 0) + (parseInt(ck.diasPresPrev) || 0); };
 const fimContrato = (start, dias) => start && dias > 0 ? addBD(start, dias - 1) : '';
 // duração total da sequência (em dias úteis), considerando atividades em paralelo
-function spanDias(list, tempoFn){
+function spanDias(list, tempoFn, foraFn = a => !!a.foraPrazo){
   let cur = 0, prevStart = 0, maxEnd = 0;
-  list.forEach(a => { const half = Math.max(1, Math.round((tempoFn(a) || 0) * 2)); const st = a.paralelo ? prevStart : cur, en = st + half;
+  list.forEach(a => { if (foraFn(a)) return; const half = Math.max(1, Math.round((tempoFn(a) || 0) * 2)); const st = a.paralelo ? prevStart : cur, en = st + half;
     maxEnd = Math.max(maxEnd, en); prevStart = st; if (!a.paralelo) cur = en; });
   return maxEnd / 2;
 }
 const fmtD = v => String(Math.round(v * 10) / 10).replace('.', ',');
-function tempoCounterHTML(total, contrato, semTempo){
+function tempoCounterHTML(total, contrato, semTempo, fora){
   const diff = contrato ? total - contrato : 0;
   const cls = !contrato ? '' : diff > 0 ? 'over' : diff < 0 ? 'under' : 'ok';
   const msg = !contrato ? 'Informe os dias remotos e presenciais do contrato para comparar.'
@@ -2167,15 +2186,15 @@ function tempoCounterHTML(total, contrato, semTempo){
     <div><span>Tempo das atividades</span><b>${fmtD(total)} d</b></div>
     <div><span>Contrato (remoto + presencial)</span><b>${contrato ? contrato + ' d' : '—'}</b></div>
     <div><span>Diferença</span><b>${contrato ? (diff > 0 ? '+' : '') + fmtD(diff) + ' d' : '—'}</b></div>
-    <div class="msg">${msg}${semTempo ? `<br><span style="color:#9A4A00;font-weight:500">${semTempo} atividade(s) sem tempo definido (contadas como 1 dia).</span>` : ''}</div>
+    <div class="msg">${msg}${semTempo ? `<br><span style="color:#9A4A00;font-weight:500">${semTempo} atividade(s) sem tempo definido (contadas como 1 dia).</span>` : ''}${fora ? `<br><span style="color:var(--muted);font-weight:500">${fora} atividade(s) fora do prazo do contrato não entram na contagem.</span>` : ''}</div>
     ${contrato ? `<div class="bar2"><i style="width:${pct}%"></i></div>` : ''}</div>`;
 }
 function renderTempoCard(){
   if (!currentImpl) return;
   const atv = [...(currentImpl.dados.atividades||[])].sort((a,b) => (a.ordem||0) - (b.ordem||0));
   if (!atv.length){ $('#tempoCard').innerHTML = ''; return; }
-  const sem = atv.filter(a => !(Number(a.diasPrev) > 0) && tempoCat(a.nome) == null).length;
-  $('#tempoCard').innerHTML = tempoCounterHTML(spanDias(atv, tempoAtv), contratoDias(), sem);
+  const sem = atv.filter(a => !a.foraPrazo && !(Number(a.diasPrev) > 0) && tempoCat(a.nome) == null).length;
+  $('#tempoCard').innerHTML = tempoCounterHTML(spanDias(atv, tempoAtv), contratoDias(), sem, atv.filter(a => a.foraPrazo).length);
 }
 const lastFim = atv => atv.map(a => a.fim || a.inicio).filter(Boolean).sort().pop() || '';
 
@@ -2225,7 +2244,7 @@ function fillProdutoSelect(){ if (currentImpl) setImplProduto($('#imProdutos').v
 function makeAtvFromTpl(t, i){
   const c = catalogo.find(x => norm(x.nome) === norm(t.nome));
   return { id: i + 1, ordem: i + 1, nome: t.nome, catalogId: c ? c.id : null, prev: Number(t.prev) || 1, real: 0,
-    diasPrev: c && c.tempo ? Number(c.tempo) : (Number(t.diasPrev) || 0), diasReal: 0, inicio:'', fim:'', paralelo: !!t.paralelo, pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'', descricao: c?.descricao || '' };
+    diasPrev: c && c.tempo ? Number(c.tempo) : (Number(t.diasPrev) || 0), diasReal: 0, inicio:'', fim:'', paralelo: !!t.paralelo, foraPrazo: !!(c && c.fora_prazo), pct: 0, resp: t.resp || 'Cittati', modalidade: t.modalidade || '', status:'Aguardando', obs:'', descricao: c?.descricao || '' };
 }
 /* ---------- período do contrato e datas ---------- */
 function syncDiasHeader(){
@@ -2238,7 +2257,7 @@ function updatePeriodoInfo(){
   renderTempoCard();
   const dias = contratoDias(), ini = $('#imInicio').value, fc = fimContrato(ini, dias);
   $('#imPeriodo').textContent = dias ? `Contrato: ${dias} dia(s) útil(eis)` + (fc ? ` · encerramento previsto ${fmtDate(fc)}` : '') : 'Informe os dias do contrato para prever o encerramento.';
-  const fimAtv = lastFim(currentImpl.dados.atividades || []), fim = $('#imFim').value, box = $('#schedInfo');
+  const fimAtv = lastFim((currentImpl.dados.atividades || []).filter(a => !a.foraPrazo)), fim = $('#imFim').value, box = $('#schedInfo');
   if (!fimAtv || !fim){ box.textContent = ''; box.className = ''; return; }
   const d = bdDiff(fim, fimAtv);
   box.className = d ? 'sched-warn' : 'sched-ok';
@@ -2369,7 +2388,7 @@ function renderProdEditor(){
       <input type="text" list="atvSug" data-pf="nome" value="${esc(t.nome)}" placeholder="Atividade do catálogo">
       <select data-pf="resp">${opt(RESP_OPTS, t.resp || 'Cittati')}</select>
       <input type="number" min="0" step="1" data-pf="prev" value="${t.prev ?? 1}">
-      <input type="number" min="0.5" step="0.5" data-pt value="${tempoCat(t.nome) ?? ''}" placeholder="—" ${catalogo.some(c => norm(c.nome) === norm(t.nome)) ? '' : 'disabled title="Atividade fora do catálogo"'} aria-label="Tempo (dias úteis, vale para o catálogo)">
+      <input type="number" min="0.5" step="0.5" data-pt value="${tempoCat(t.nome) ?? ''}" ${foraCat(t.nome) ? 'style="background:repeating-linear-gradient(45deg,#E1EEF8,#E1EEF8 4px,transparent 4px,transparent 8px)" title="Fora do prazo do contrato (definido no catálogo)"' : ''} placeholder="—" ${catalogo.some(c => norm(c.nome) === norm(t.nome)) ? '' : 'disabled title="Atividade fora do catálogo"'} aria-label="Tempo (dias úteis, vale para o catálogo)">
       <label style="display:flex;justify-content:center"><input type="checkbox" data-pf="paralelo" ${t.paralelo ? 'checked' : ''} aria-label="Em paralelo com a anterior"></label>
       <select data-pf="modalidade"><option value="">—</option>${opt(['Remoto','Presencial'], t.modalidade)}</select>
       <button type="button" class="b-del" data-prm aria-label="Remover atividade" title="Remover">×</button></div>`).join('')}
@@ -2382,8 +2401,8 @@ function renderProdEditor(){
 function renderPdCounter(){
   if (!prodDraft) return;
   const L = prodDraft.atividades.filter(t => (t.nome||'').trim());
-  const sem = L.filter(t => tempoCat(t.nome) == null).length;
-  $('#pdCounter').innerHTML = tempoCounterHTML(spanDias(L, t => tempoCat(t.nome) || 1), (Number(prodDraft.diasRem) || 0) + (Number(prodDraft.diasPres) || 0), sem);
+  const sem = L.filter(t => !foraCat(t.nome) && tempoCat(t.nome) == null).length;
+  $('#pdCounter').innerHTML = tempoCounterHTML(spanDias(L, t => tempoCat(t.nome) || 1, t => foraCat(t.nome)), (Number(prodDraft.diasRem) || 0) + (Number(prodDraft.diasPres) || 0), sem, L.filter(t => foraCat(t.nome)).length);
 }
 $('#prodEditor').addEventListener('input', e => {
   if (e.target.id === 'pdNome'){ prodDraft.nome = e.target.value; return; }
@@ -2538,7 +2557,7 @@ function statusData(r){
   return {
     nome: r.cliente || c.nome || 'Sem nome', coord: c.coordenador || '', analista: c.cittati || '', inicio: c.inicio || '', fim: c.fim || '',
     atualizado: r.updated_at, status, servico: (c.produtos||[]).join(' + ') || c.produto || '', equip: (e.hardware||[]).join(', '),
-    veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', aten, prox: atv.filter(a => !feita(a)), fin: concl,
+    veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', aten, prox: atv.filter(a => !feita(a) && !a.foraPrazo), pendCli: atv.filter(a => !feita(a) && a.foraPrazo), fin: concl,
     prog: implStats(atv).prog, total: atv.length
   };
 }
@@ -2557,7 +2576,7 @@ function renderStCards(){
       <div><span>Serviço</span>${esc(d.servico||'—')}</div><div><span>Última atualização</span>${dBR(d.atualizado)}</div>
     </div>
     ${pbar(d.prog)}
-    <div class="st-nums"><div><b>${d.fin.length}</b> finalizadas</div><div><b>${d.prox.length}</b> próximas</div><div class="${d.aten.length?'warn':''}"><b>${d.aten.length}</b> atenção</div></div>
+    <div class="st-nums"><div><b>${d.fin.length}</b> finalizadas</div><div><b>${d.prox.length}</b> próximas</div>${d.pendCli.length ? `<div><b>${d.pendCli.length}</b> pend. cliente</div>` : ''}<div class="${d.aten.length?'warn':''}"><b>${d.aten.length}</b> atenção</div></div>
     <div class="st-actions"><button type="button" class="open" data-sta="open">Abrir</button>
       <button type="button" data-sta="png">Imagem</button><button type="button" data-sta="pdf">PDF</button><button type="button" data-sta="pptx">PowerPoint</button></div>
   </div>`).join('') : `<div class="empty">${impls.length ? 'Nenhuma implantação encontrada para esse filtro.' : 'Nenhuma implantação cadastrada ainda.'}</div>`;
@@ -2592,6 +2611,10 @@ function reportHTML(r){
       <div><div class="sr-bar big">PONTOS DE ATENÇÃO</div><div class="sr-box">${d.aten.map(x => '- ' + esc(x)).join('\n') || ' '}</div>
         <div class="sr-h">ATIVIDADES FINALIZADAS</div>${tbl(d.fin, 'Nenhuma atividade finalizada')}</div>
     </div>
+    ${d.pendCli.length ? `<div class="sr-bar big" style="margin-top:16px">PENDÊNCIAS DO CLIENTE</div>
+      <table class="sr-t"><tr><th style="width:44%">NOME</th><th style="width:28%">RESPONSÁVEL</th><th>Término previsto</th></tr>
+      ${d.pendCli.map(a => `<tr><td>${esc(a.nome)}</td><td>${esc(a.resp||'')}</td><td>${a.fim ? fmtDate(a.fim) : ''}</td></tr>`).join('')}</table>
+      <p style="font-size:11.5px;color:#666;margin:4px 0 0">Atividades de responsabilidade do cliente, fora do prazo do contrato de implantação.</p>` : ''}
     <div class="sr-foot">Progresso geral: ${d.prog}% · ${d.fin.length} de ${d.total} atividades finalizadas</div>
   </div>`;
 }
@@ -2675,6 +2698,17 @@ async function stPptx(r, base, asBlob){
   const topt = { y:yT, w:colW, colW:[3.0, 2.0, 1.5], fontFace:F, fontSize:10, valign:'middle', rowH:0.36, margin:0.06, autoPage:true, autoPageRepeatHeader:true, autoPageSlideStartY:0.4 };
   sl.addTable(rows(d.prox), { ...topt, x:xL });
   sl.addTable(rows(d.fin), { ...topt, x:xR });
+  if (d.pendCli.length){
+    const s2 = pres.addSlide();
+    s2.addImage({ data: LOGO, x:0.45, y:0.12, w:1.9, h:0.92 });
+    s2.addText([{ text:'Projeto – ', options:{ color:'000000' } }, { text:d.nome, options:{ color:RED } }],
+      { x:3.15, y:0.12, w:9.75, h:0.62, fontFace:F, fontSize:20, bold:true, align:'center', valign:'middle', line:{ color:'222222', width:1 }, isTextBox:true });
+    s2.addText('PENDÊNCIAS DO CLIENTE', { x:0.05, y:1.3, w:13.2, h:0.5, fill:{ color:GRAY }, color:'FFFFFF', fontFace:F, fontSize:20, bold:true, align:'center', valign:'middle', isTextBox:true, margin:0 });
+    s2.addText('Atividades de responsabilidade do cliente, fora do prazo do contrato de implantação.', { x:0.05, y:1.85, w:13.2, h:0.35, fontFace:F, fontSize:11, color:'666666', isTextBox:true });
+    const pr = [[{ text:'NOME' }, { text:'RESPONSÁVEL' }, { text:'Término previsto' }]].concat(d.pendCli.map(a => [{ text:a.nome || '' }, { text:a.resp || '' }, { text:a.fim ? fmtDate(a.fim) : '' }]))
+      .map((row, i) => row.map(cell => ({ ...cell, options:{ fill:{ color: i % 2 === 0 ? LIGHT : 'FFFFFF' } } })));
+    s2.addTable(pr, { x:0.05, y:2.3, w:13.2, colW:[6.6, 3.6, 3.0], fontFace:F, fontSize:11, valign:'middle', rowH:0.38, margin:0.06, autoPage:true });
+  }
   const blob = await pres.write({ outputType:'blob' });
   if (asBlob) return blob;
   await save(base + '.pptx', blob); flash('PowerPoint baixado.');
