@@ -526,7 +526,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <div class="row">
       <label class="f">Dias remotos (contrato)<input type="number" min="0" step="1" id="imDiasRem"></label>
       <label class="f">Dias presenciais (contrato)<input type="number" min="0" step="1" id="imDiasPres"></label>
-      <label class="f">Status manual <small style="color:var(--muted)">(prevalece sobre o automático)</small><select id="imStatusManual"><option value="">Automático</option><option>Paralisado</option><option>Cancelado</option></select></label>
+      <label class="f" title="Quando preenchido, prevalece sobre o status automático">Status manual<select id="imStatusManual" title="Quando preenchido, prevalece sobre o status automático"><option value="">Automático</option><option>Paralisado</option><option>Cancelado</option></select></label>
       <div class="f" style="font-size:13px;color:var(--muted);align-self:end;padding-bottom:9px" id="imPeriodo"></div>
     </div>
     <div class="os-line"><span>Arquivo da OS:</span> <b id="osName">nenhum arquivo anexado</b>
