@@ -2163,7 +2163,10 @@ function schedule(list, start, keep = () => false){
   list.forEach(a => {
     const half = Math.max(1, Math.round(tempoAtv(a) * 2));
     // fora do prazo: começa logo após a atividade anterior (ex.: o treinamento) e não empurra as seguintes
-    const st = a.foraPrazo ? cur : a.paralelo ? prevStart : cur, en = st + half;
+    let st = a.foraPrazo ? cur : a.paralelo ? prevStart : cur;
+    // atividade de 1 dia ou mais não divide o dia com uma de meio período: começa no dia útil seguinte
+    if (!a.paralelo && half >= 2 && st % 2) st++;
+    const en = st + half;
     if (!keep(a)){ a.inicio = addBD(start, Math.floor(st / 2)); a.fim = addBD(start, Math.ceil(en / 2) - 1); }
     if (a.foraPrazo) return;
     prevStart = st; if (!a.paralelo) cur = en;
@@ -2174,7 +2177,7 @@ const fimContrato = (start, dias) => start && dias > 0 ? addBD(start, dias - 1) 
 // duração total da sequência (em dias úteis), considerando atividades em paralelo
 function spanDias(list, tempoFn, foraFn = a => !!a.foraPrazo){
   let cur = 0, prevStart = 0, maxEnd = 0;
-  list.forEach(a => { if (foraFn(a)) return; const half = Math.max(1, Math.round((tempoFn(a) || 0) * 2)); const st = a.paralelo ? prevStart : cur, en = st + half;
+  list.forEach(a => { if (foraFn(a)) return; const half = Math.max(1, Math.round((tempoFn(a) || 0) * 2)); let st = a.paralelo ? prevStart : cur; if (!a.paralelo && half >= 2 && st % 2) st++; const en = st + half;
     maxEnd = Math.max(maxEnd, en); prevStart = st; if (!a.paralelo) cur = en; });
   return maxEnd / 2;
 }
