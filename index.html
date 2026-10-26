@@ -177,6 +177,36 @@ body[data-screen="config"] .tabs, body[data-screen="config"] #wrap, body[data-sc
 body:not([data-screen="config"]) #configView{display:none}
 body[data-screen="status"] .tabs, body[data-screen="status"] #wrap, body[data-screen="status"] .ed-only, body[data-screen="status"] #listView{display:none!important}
 body:not([data-screen="status"]) #statusView{display:none}
+body[data-screen="atend"] .tabs, body[data-screen="atend"] #wrap, body[data-screen="atend"] .ed-only, body[data-screen="atend"] #listView,
+body[data-screen="clientes"] .tabs, body[data-screen="clientes"] #wrap, body[data-screen="clientes"] .ed-only, body[data-screen="clientes"] #listView{display:none!important}
+body:not([data-screen="atend"]) #atendView{display:none}
+body:not([data-screen="clientes"]) #clientesView{display:none}
+#atendView,#clientesView{max-width:1300px;margin:0 auto;padding:22px 20px 40px}
+.flt{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:10px;margin-bottom:12px;align-items:end}
+@media (max-width:1000px){.flt{grid-template-columns:1fr 1fr}}
+.sumrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+@media (max-width:760px){.sumrow{grid-template-columns:1fr 1fr}}
+.sumrow div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.sumrow span{display:block;font-size:12px;color:var(--muted)}
+.sumrow b{font:700 22px/1.15 "Barlow Condensed",sans-serif}
+.ls-table td.num,.ls-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sit{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.sit-r{background:#E3F2EA;color:#1F6B47}.sit-a{background:#E1EEF8;color:#0A5A92}.sit-c{background:var(--field);color:var(--muted);border:1px solid var(--line)}
+.lock-tag{font-size:11.5px;color:var(--muted)}
+.fbox{max-width:980px!important;max-height:92vh;overflow:auto}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 12px}
+.fgrid .s2{grid-column:span 2}.fgrid .s4{grid-column:1/-1}
+@media (max-width:760px){.fgrid{grid-template-columns:1fr 1fr}.fgrid .s4,.fgrid .s2{grid-column:1/-1}}
+.fgrid textarea{font:14px/1.4 "Barlow",sans-serif;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--field);color:var(--ink);resize:vertical;min-height:62px}
+.fsec{font:700 16px "Barlow Condensed",sans-serif;margin:16px 0 8px;padding-top:10px;border-top:1px solid var(--line)}
+.calcbox{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
+@media (max-width:760px){.calcbox{grid-template-columns:1fr 1fr}}
+.calcbox .tot span{display:block;font-size:12px;color:var(--muted)}.calcbox .tot b{font:700 22px "Barlow Condensed",sans-serif;color:var(--navy)}
+:root[data-theme="dark"] .calcbox .tot b{color:#9CCBEF}
+.anx{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.anx span{display:inline-flex;align-items:center;gap:6px;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 11px;font-size:13px}
+.anx button{padding:1px 7px;font-size:12px;background:transparent;border:1px solid var(--line);color:var(--ink)}
+.f.ro input,.f.ro select,.f.ro textarea{background:var(--bg);color:var(--muted)}
 #statusView{max-width:1240px;margin:0 auto;padding:22px 20px 40px}
 #stRender{position:fixed;left:-20000px;top:0}
 .st-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
@@ -453,6 +483,8 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
 
 <nav class="mainnav" aria-label="Módulos">
   <button type="button" data-go="impl">Implantações</button>
+  <button type="button" data-go="atend">Atendimentos</button>
+  <button type="button" data-go="clientes">Clientes</button>
   <button type="button" data-go="status">Status Report</button>
   <button type="button" data-go="config" class="adm-only">Configurações</button>
 </nav>
@@ -654,6 +686,39 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <datalist id="atvSug"></datalist>
 </section>
 
+<section id="atendView">
+  <div class="ls-bar">
+    <h2>Atendimentos</h2>
+    <button class="b-alt" id="btnAtXlsx" style="color:var(--ink)">Exportar Excel</button>
+    <button class="b-main" id="btnNewAt">+ Novo atendimento</button>
+  </div>
+  <div class="flt">
+    <label class="f">Buscar cliente<input type="text" id="atQ" placeholder="Nome do cliente"></label>
+    <label class="f">Analista<select id="atFAna"><option value="">Todos</option></select></label>
+    <label class="f">Tipo<select id="atFTipo"><option value="">Todos</option></select></label>
+    <label class="f">Situação<select id="atFSit"><option value="">Todas</option><option>Agendado</option><option>Realizado</option><option>Cancelado</option></select></label>
+    <label class="f">De<input type="date" id="atDe"></label>
+    <label class="f">Até<input type="date" id="atAte"></label>
+  </div>
+  <div class="sumrow" id="atSum"></div>
+  <div id="atBody"></div>
+</section>
+
+<section id="clientesView">
+  <div class="ls-bar">
+    <h2>Clientes</h2>
+    <button class="b-alt" id="btnCliXlsx" style="color:var(--ink)">Exportar Excel</button>
+    <button class="b-main" id="btnNewCli">+ Novo cliente</button>
+  </div>
+  <div class="flt" style="grid-template-columns:2fr 1fr 1fr 1fr">
+    <label class="f">Buscar<input type="text" id="cliQ" placeholder="Empresa, CCO ou cidade"></label>
+    <label class="f">Base<select id="cliFBase"><option value="">Todas</option><option>SP</option><option>MG</option><option>PE</option></select></label>
+    <label class="f">Pacote<select id="cliFPac"><option value="">Todos</option></select></label>
+    <label class="f">UF<select id="cliFUf"><option value="">Todas</option></select></label>
+  </div>
+  <div id="cliBody"></div>
+</section>
+
 <section id="statusView">
   <div id="stListWrap">
     <div class="ls-bar">
@@ -681,6 +746,91 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   </div>
 </section>
 <div id="stRender" aria-hidden="true"></div>
+<div class="modal" id="cliModal" hidden role="dialog" aria-modal="true" aria-labelledby="cliTitle">
+  <div class="box fbox">
+    <h2 id="cliTitle">Cliente</h2>
+    <div class="fgrid">
+      <label class="f s2">Empresa<input type="text" id="clNome"></label>
+      <label class="f">Base de origem<select id="clBase"><option>SP</option><option>MG</option><option>PE</option></select></label>
+      <label class="f">Pacote<input type="text" id="clPacote" list="pacSug"></label>
+      <label class="f s2">CCO<input type="text" id="clCco"></label>
+      <label class="f">Cidade<input type="text" id="clCidade"></label>
+      <label class="f">UF<input type="text" id="clUf" maxlength="2" style="text-transform:uppercase"></label>
+      <label class="f s4">Endereço<input type="text" id="clEnd"></label>
+      <label class="f">Contato para agenda<input type="text" id="clContato"></label>
+      <label class="f">Telefone<input type="tel" id="clTel"></label>
+      <label class="f s2">E-mail<input type="email" id="clEmail"></label>
+    </div>
+    <h3 class="fsec">Deslocamento a partir da base</h3>
+    <div class="calcbox">
+      <label class="f">KM ida<input type="number" min="0" step="0.1" id="clIda"></label>
+      <label class="f">KM volta<input type="number" min="0" step="0.1" id="clVolta"></label>
+      <label class="f">Pedágio (R$)<input type="number" min="0" step="0.01" id="clPed"></label>
+      <label class="f">Valor do km (R$)<input type="number" min="0" step="0.01" id="clVkm"></label>
+      <div class="tot"><span>KM ida + volta (+10%)</span><b id="clKmTot">—</b></div>
+      <div class="tot"><span>Valor do km rodado</span><b id="clVTot">—</b></div>
+      <div class="tot"><span>Pedágio</span><b id="clPTot">—</b></div>
+      <div class="tot"><span>Total por visita</span><b id="clTot">—</b></div>
+    </div>
+    <div class="fgrid" style="margin-top:12px">
+      <label class="f">Par de visitas<input type="text" id="clPar"></label>
+      <label class="f">Total de visitas<input type="text" id="clVis"></label>
+      <label class="f s2">Observações<input type="text" id="clObs"></label>
+    </div>
+    <div class="msg-err" id="cliErr" role="alert"></div>
+    <div class="mb">
+      <button type="button" class="b-danger" id="cliDel" hidden style="margin-right:auto">Excluir</button>
+      <button type="button" class="b-ghost" id="cliAt">Ver atendimentos</button>
+      <button type="button" class="b-ghost" id="cliCancel">Cancelar</button>
+      <button type="button" class="b-save" id="cliSave">Salvar</button>
+    </div>
+  </div>
+</div>
+<datalist id="pacSug"><option>1</option><option>2</option><option>3</option><option>4</option><option>Fora dos Pacotes</option></datalist>
+<datalist id="cliSug"></datalist>
+
+<div class="modal" id="atModal" hidden role="dialog" aria-modal="true" aria-labelledby="atTitle">
+  <div class="box fbox">
+    <h2 id="atTitle">Atendimento</h2>
+    <p id="atOwner" class="lock-tag" style="margin:-4px 0 10px"></p>
+    <div class="fgrid" id="atForm">
+      <label class="f s2">Cliente<input type="text" id="aCli" list="cliSug" placeholder="Digite para buscar no cadastro"></label>
+      <label class="f">Tipo<select id="aTipo"><option value="">Selecione</option></select></label>
+      <label class="f">Situação<select id="aSit"><option>Agendado</option><option>Realizado</option><option>Cancelado</option></select></label>
+      <label class="f">Data<input type="date" id="aData"></label>
+      <label class="f">Período<select id="aPer"><option>Manhã</option><option>Tarde</option><option>Dia inteiro</option></select></label>
+      <label class="f">Analista<select id="aAna"><option value="">Selecione</option></select></label>
+      <label class="f">Modalidade<select id="aMod"><option>Presencial</option><option>Remoto</option></select></label>
+      <label class="f s2">Produto / sistema<input type="text" id="aProd" placeholder="Ex.: GOOL, ICS, Flits"></label>
+      <label class="f">Nº do chamado<input type="text" id="aCham"></label>
+      <div></div>
+      <label class="f s4">Participantes do cliente<textarea id="aPart" rows="2"></textarea></label>
+      <label class="f s4">O que foi feito<textarea id="aDesc" rows="3"></textarea></label>
+      <label class="f s4">Próximos passos / pendências<textarea id="aProx" rows="2"></textarea></label>
+    </div>
+    <div id="atDesl">
+      <h3 class="fsec">Deslocamento <small id="atDeslSrc" style="font:500 12.5px 'Barlow',sans-serif;color:var(--muted)"></small></h3>
+      <div class="calcbox">
+        <label class="f">KM ida + volta (+10%)<input type="number" min="0" step="0.1" id="aKm"></label>
+        <label class="f">Valor do km (R$)<input type="number" min="0" step="0.01" id="aVkm"></label>
+        <label class="f">Pedágio (R$)<input type="number" min="0" step="0.01" id="aPed"></label>
+        <div class="tot"><span>Total do deslocamento</span><b id="aTot">—</b></div>
+      </div>
+      <button type="button" class="b-ghost" id="aRecalc" style="margin-top:8px;border:1px solid var(--line)">Recalcular pelo cadastro do cliente</button>
+    </div>
+    <h3 class="fsec">Anexos</h3>
+    <div id="aAnx" class="anx"></div>
+    <button type="button" class="b-ghost" id="aAddAnx" style="margin-top:8px;border:1px solid var(--line)">+ Anexar arquivo</button>
+    <input type="file" id="aAnxInput" multiple hidden>
+    <div class="msg-err" id="atErr" role="alert"></div>
+    <div class="mb">
+      <button type="button" class="b-danger" id="atDel" hidden style="margin-right:auto">Excluir</button>
+      <button type="button" class="b-ghost" id="atCancel">Fechar</button>
+      <button type="button" class="b-save" id="atSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="osModal" hidden role="dialog" aria-modal="true" aria-labelledby="osTitle">
   <div class="box" style="max-width:860px;max-height:90vh;overflow:auto">
     <h2 id="osTitle">Criar implantação completa</h2>
@@ -701,6 +851,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-ct="chk">Checklist</button>
     <button type="button" data-ct="prod">Produtos</button>
     <button type="button" data-ct="fer">Feriados</button>
+    <button type="button" data-ct="tipos">Tipos de atendimento</button>
   </div>
   <div id="cfgUsers">
   <div id="storageCard"></div>
@@ -734,6 +885,17 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <p class="cfgp">Itens que aparecem no checklist de todas as implantações. Ao vincular uma atividade, o item vira "Sim" automaticamente quando essa atividade estiver Concluída na implantação. Itens sem vínculo são marcados manualmente.</p>
       <div id="chkCfgList"></div>
       <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
+    </div>
+  </div>
+  <div id="cfgTipos" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Tipos de atendimento</h3>
+      <p class="cfgp">Opções do campo "Tipo" na guia Atendimentos. Remover um tipo não altera os atendimentos já registrados.</p>
+      <div id="tipoList"></div>
+      <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
+        <input type="text" id="tipoNew" placeholder="Novo tipo (ex.: Visita técnica)" aria-label="Novo tipo de atendimento">
+        <button type="button" class="b-main" id="btnAddTipo">Adicionar</button>
+      </div>
     </div>
   </div>
   <div id="cfgFer" hidden>
@@ -1092,8 +1254,8 @@ async function checkAdmin(uid){
 
 function show(screen){
   document.body.dataset.screen = screen;
-  $('#subtitle').textContent = {impl:'Acompanhamento das implantações', implDet:'Acompanhamento das implantações', list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status das implantações'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
-  const mod = {impl:'impl', implDet:'impl', list:'list', editor:'list', config:'config', status:'status'}[screen];
+  $('#subtitle').textContent = {impl:'Acompanhamento das implantações', implDet:'Acompanhamento das implantações', list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status das implantações', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
+  const mod = {impl:'impl', implDet:'impl', list:'list', editor:'list', config:'config', status:'status', atend:'atend', clientes:'clientes'}[screen];
   document.querySelectorAll('.mainnav button').forEach(b => b.classList.toggle('active', b.dataset.go === mod));
   if (screen === 'editor') fitPreview();
   window.scrollTo({top:0});
@@ -1226,6 +1388,8 @@ async function go(mod){
   else if (mod === 'list'){ show('list'); loadList(); }
   else if (mod === 'config' && isAdmin){ show('config'); cfgTab('users'); }
   else if (mod === 'status'){ show('status'); stShowList(); loadImpl().then(renderStCards); }
+  else if (mod === 'atend'){ show('atend'); openAtendView(); }
+  else if (mod === 'clientes'){ show('clientes'); loadClientes().then(renderClientes); }
 }
 document.querySelectorAll('.mainnav button').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
 
@@ -1457,13 +1621,14 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos';
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'cat'){ loadCatalog(); }
   else if (t === 'chk'){ renderChkCfg(); Promise.resolve(loadCatalog()).catch(() => {}).then(() => loadChecklistTpl()); }
   else if (t === 'prod'){ loadCatalog().then(loadProdutos); }
   else if (t === 'fer'){ loadFeriados().then(renderFeriados); }
+  else if (t === 'tipos'){ loadTipos(); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
 
@@ -2738,6 +2903,295 @@ async function stPptx(r, base, asBlob){
   if (asBlob) return blob;
   await save(base + '.pptx', blob); flash('PowerPoint baixado.');
 }
+
+/* =========================================================
+   CLIENTES
+   ========================================================= */
+let clientes = [], cliCur = null;
+const brl = v => (Number(v) || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const km1 = v => (Math.round((Number(v) || 0) * 10) / 10).toLocaleString('pt-BR', { minimumFractionDigits:1, maximumFractionDigits:1 });
+// regra da planilha RDV: (KM ida + KM volta) + 10%, multiplicado pelo valor do km; pedágio à parte
+const kmRdv = c => Math.round(((Number(c.km_ida) || 0) + (Number(c.km_volta) || 0)) * 1.1 * 10) / 10;
+const custoKm = c => kmRdv(c) * (Number(c.valor_km) || 0);
+async function loadClientes(){
+  const { data, error } = await sb.from('clientes').select('*').order('nome');
+  if (error){ $('#cliBody').innerHTML = `<div class="empty">Não foi possível carregar os clientes: ${esc(error.message)}</div>`; return; }
+  clientes = data || [];
+  $('#cliSug').innerHTML = clientes.map(c => `<option value="${esc(c.nome)}">${esc([c.cidade, c.uf].filter(Boolean).join(' - ') || c.base)}</option>`).join('');
+  const opts = (sel, vals, keep) => { const cur = $(sel).value; $(sel).innerHTML = `<option value="">${keep}</option>` + [...new Set(vals.filter(Boolean))].sort((a,b) => String(a).localeCompare(String(b),'pt-BR')).map(v => `<option>${esc(v)}</option>`).join(''); $(sel).value = cur; };
+  opts('#cliFPac', clientes.map(c => c.pacote), 'Todos'); opts('#cliFUf', clientes.map(c => c.uf), 'Todas');
+}
+function renderClientes(){
+  const q = norm($('#cliQ').value), b = $('#cliFBase').value, pc = $('#cliFPac').value, uf = $('#cliFUf').value;
+  const rows = clientes.filter(c => (!b || c.base === b) && (!pc || c.pacote === pc) && (!uf || c.uf === uf)
+    && (!q || norm(c.nome).includes(q) || norm(c.cco).includes(q) || norm(c.cidade).includes(q)));
+  if (!clientes.length){ $('#cliBody').innerHTML = '<div class="empty">Nenhum cliente cadastrado. Clique em "+ Novo cliente" ou rode o script de importação.</div>'; return; }
+  $('#cliBody').innerHTML = `<p style="font-size:13px;color:var(--muted);margin:0 0 6px">${rows.length} de ${clientes.length} cliente(s)</p>
+  <div class="ls-wrap"><table class="ls-table"><thead><tr><th>Empresa</th><th>Base</th><th>Cidade / UF</th><th>Pacote</th><th>Contato</th>
+    <th class="num">KM ida+volta (+10%)</th><th class="num">Km rodado (R$)</th><th class="num">Pedágio</th><th class="num">Total por visita</th></tr></thead><tbody>
+  ${rows.slice(0, 400).map(c => `<tr class="rec" tabindex="0" data-cid="${c.id}"><td class="emp">${esc(c.nome)}<small>${esc(c.cco || '')}</small></td>
+    <td>${esc(c.base || '')}</td><td>${esc([c.cidade, c.uf].filter(Boolean).join(' - ') || '—')}</td><td>${esc(c.pacote || '—')}</td>
+    <td>${esc(c.contato || '—')}<small>${esc(c.telefone || '')}</small></td>
+    <td class="num">${km1(kmRdv(c))}</td><td class="num">${brl(custoKm(c))}</td><td class="num">${brl(c.pedagio)}</td><td class="num"><b>${brl(custoKm(c) + (Number(c.pedagio) || 0))}</b></td></tr>`).join('')}
+  </tbody></table></div>${rows.length > 400 ? '<p class="lock-tag">Mostrando os 400 primeiros. Use a busca para refinar.</p>' : ''}`;
+  $('#cliBody').querySelectorAll('tr.rec').forEach(tr => { const o = () => openCliente(Number(tr.dataset.cid)); tr.onclick = o; tr.onkeydown = e => { if (e.key === 'Enter') o(); }; });
+}
+['#cliQ','#cliFBase','#cliFPac','#cliFUf'].forEach(id => $(id).addEventListener('input', renderClientes));
+const CLI_F = { clNome:'nome', clBase:'base', clPacote:'pacote', clCco:'cco', clCidade:'cidade', clUf:'uf', clEnd:'endereco', clContato:'contato', clTel:'telefone', clEmail:'email',
+  clIda:'km_ida', clVolta:'km_volta', clPed:'pedagio', clVkm:'valor_km', clPar:'visitas_par', clVis:'visitas_total', clObs:'obs' };
+const CLI_NUM = ['km_ida','km_volta','pedagio','valor_km'];
+function openCliente(id){
+  cliCur = id ? clientes.find(c => c.id === id) : null;
+  const c = cliCur || { base:'SP', valor_km:1.35, pedagio:0 };
+  Object.entries(CLI_F).forEach(([el, f]) => $('#' + el).value = c[f] ?? '');
+  $('#cliTitle').textContent = cliCur ? cliCur.nome : 'Novo cliente';
+  $('#cliDel').hidden = !(cliCur && isAdmin); $('#cliAt').hidden = !cliCur; $('#cliErr').textContent = '';
+  cliCalc(); $('#cliModal').hidden = false; $('#clNome').focus();
+}
+function readCliForm(){ const o = {}; Object.entries(CLI_F).forEach(([el, f]) => { const v = $('#' + el).value.trim(); o[f] = CLI_NUM.includes(f) ? (v === '' ? null : Number(v)) : v; }); o.uf = (o.uf || '').toUpperCase(); return o; }
+function cliCalc(){ const c = readCliForm(); $('#clKmTot').textContent = km1(kmRdv(c)) + ' km'; $('#clVTot').textContent = brl(custoKm(c)); $('#clPTot').textContent = brl(c.pedagio); $('#clTot').textContent = brl(custoKm(c) + (Number(c.pedagio) || 0)); }
+['#clIda','#clVolta','#clPed','#clVkm'].forEach(id => $(id).addEventListener('input', cliCalc));
+$('#btnNewCli').addEventListener('click', () => openCliente(null));
+$('#cliCancel').addEventListener('click', () => { $('#cliModal').hidden = true; });
+$('#cliAt').addEventListener('click', () => { const n = cliCur?.nome || ''; $('#cliModal').hidden = true; show('atend'); openAtendView({ cliente:n }); });
+$('#cliSave').addEventListener('click', async () => {
+  const o = readCliForm();
+  if (!o.nome){ $('#cliErr').textContent = 'Informe o nome da empresa.'; return; }
+  $('#cliSave').disabled = true;
+  const res = cliCur ? await sb.from('clientes').update(o).eq('id', cliCur.id).select('id').single() : await sb.from('clientes').insert(o).select('id').single();
+  $('#cliSave').disabled = false;
+  if (res.error){ $('#cliErr').textContent = /duplicate|unique/i.test(res.error.message) ? 'Já existe um cliente com esse nome nesta base.' : 'Não foi possível salvar: ' + res.error.message; return; }
+  $('#cliModal').hidden = true; flash('Cliente salvo.'); await loadClientes(); renderClientes();
+});
+$('#cliDel').addEventListener('click', async () => {
+  const v = await ask('Excluir cliente?', `${cliCur.nome} será removido do cadastro. Os atendimentos já registrados continuam, com o nome do cliente.`, [['Cancelar','b-ghost',null],['Excluir','b-danger','ok']]);
+  if (!v) return;
+  const { error } = await sb.from('clientes').delete().eq('id', cliCur.id);
+  if (error){ $('#cliErr').textContent = 'Não foi possível excluir: ' + error.message; return; }
+  $('#cliModal').hidden = true; flash('Cliente excluído.'); await loadClientes(); renderClientes();
+});
+$('#btnCliXlsx').addEventListener('click', async () => {
+  if (!window.ExcelJS){ flash('Biblioteca do Excel não carregou. Recarregue a página.'); return; }
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Clientes', { views:[{ state:'frozen', ySplit:1 }] });
+  ws.columns = [['Empresa',42],['Base',7],['CCO',34],['Pacote',10],['Cidade',22],['UF',5],['Endereço',50],['Contato',22],['Telefone',16],['E-mail',28],
+    ['KM ida',9],['KM volta',9],['KM ida+volta (+10%)',14],['Valor km',10],['Valor km rodado',14],['Pedágio',10],['Total por visita',14],['Par de visitas',10],['Total de visitas',10],['Observações',30]]
+    .map(([header, width]) => ({ header, width }));
+  clientes.forEach(c => ws.addRow([c.nome, c.base, c.cco, c.pacote, c.cidade, c.uf, c.endereco, c.contato, c.telefone, c.email,
+    Number(c.km_ida) || 0, Number(c.km_volta) || 0, kmRdv(c), Number(c.valor_km) || 0, custoKm(c), Number(c.pedagio) || 0, custoKm(c) + (Number(c.pedagio) || 0), c.visitas_par, c.visitas_total, c.obs]));
+  ws.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } }; ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF02416C' } };
+  [14,15,16,17].forEach(i => ws.getColumn(i).numFmt = '"R$" #,##0.00'); [11,12,13].forEach(i => ws.getColumn(i).numFmt = '#,##0.0');
+  ws.autoFilter = { from:'A1', to:'T1' };
+  const buf = await wb.xlsx.writeBuffer();
+  await save('Clientes_KM.xlsx', new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); flash('Excel exportado.');
+});
+
+/* =========================================================
+   TIPOS DE ATENDIMENTO (configurações)
+   ========================================================= */
+let tipos = [];
+async function loadTipos(){
+  const { data, error } = await sb.from('tipos_atendimento').select('id,nome').order('nome');
+  if (error){ $('#tipoList').innerHTML = `<div class="note">Tipos indisponíveis: ${esc(error.message)}</div>`; return; }
+  tipos = data || []; renderTipos(); fillTipoSelects();
+}
+function fillTipoSelects(){
+  const keep = (sel, first) => { const v = $(sel).value; $(sel).innerHTML = `<option value="">${first}</option>` + tipos.map(t => `<option>${esc(t.nome)}</option>`).join('') + (v && !tipos.some(t => t.nome === v) ? `<option>${esc(v)}</option>` : ''); $(sel).value = v; };
+  keep('#aTipo', 'Selecione'); keep('#atFTipo', 'Todos');
+}
+function renderTipos(){
+  if ($('#cfgTipos').hidden) return;
+  $('#tipoList').innerHTML = tipos.length ? tipos.map(t => `<div class="catrow" data-tid="${t.id}"><input type="text" value="${esc(t.nome)}" data-tipo aria-label="Tipo de atendimento">
+    <button type="button" class="b-del" data-tipodel aria-label="Remover tipo" title="Remover">×</button></div>`).join('') : '<div class="empty">Nenhum tipo cadastrado.</div>';
+}
+$('#tipoList').addEventListener('change', async e => {
+  if (!e.target.matches('[data-tipo]')) return;
+  const id = e.target.closest('[data-tid]').dataset.tid, nome = e.target.value.trim(); if (!nome) return;
+  const { error } = await sb.from('tipos_atendimento').update({ nome }).eq('id', id);
+  if (error) flash('Erro: ' + error.message); else { flash('Tipo atualizado.'); loadTipos(); }
+});
+$('#tipoList').addEventListener('click', async e => {
+  if (!e.target.closest('[data-tipodel]')) return;
+  const t = tipos.find(x => String(x.id) === e.target.closest('[data-tid]').dataset.tid);
+  const v = await ask('Remover tipo?', `"${t.nome}" deixará de aparecer para seleção.`, [['Cancelar','b-ghost',null],['Remover','b-danger','ok']]);
+  if (!v) return;
+  const { error } = await sb.from('tipos_atendimento').delete().eq('id', t.id);
+  if (error) flash('Erro: ' + error.message); else loadTipos();
+});
+async function addTipo(){
+  const nome = $('#tipoNew').value.trim(); if (!nome) return;
+  if (tipos.some(t => norm(t.nome) === norm(nome))){ flash('Esse tipo já existe.'); return; }
+  const { error } = await sb.from('tipos_atendimento').insert({ nome });
+  if (error){ flash('Erro: ' + error.message); return; }
+  $('#tipoNew').value = ''; loadTipos();
+}
+$('#btnAddTipo').addEventListener('click', addTipo);
+$('#tipoNew').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); addTipo(); } });
+
+/* =========================================================
+   ATENDIMENTOS
+   ========================================================= */
+let atends = [], atCur = null, atDraft = null;
+const SIT_CLS = { 'Realizado':'sit-r', 'Agendado':'sit-a', 'Cancelado':'sit-c' };
+const canEditAt = r => isAdmin || !r || !r.id || r.criado_por === myId;
+const atCusto = d => d.modalidade === 'Presencial' ? (Number(d.km) || 0) * (Number(d.valor_km) || 0) + (Number(d.pedagio) || 0) : 0;
+async function openAtendView(pre = {}){
+  if (!$('#atDe').value && !$('#atAte').value && !pre.cliente){
+    const t = new Date(); $('#atDe').value = iso(new Date(t.getFullYear(), t.getMonth(), 1)); $('#atAte').value = iso(new Date(t.getFullYear(), t.getMonth() + 1, 0));
+  }
+  if (pre.cliente !== undefined){ $('#atQ').value = pre.cliente; $('#atDe').value = ''; $('#atAte').value = ''; }
+  $('#atBody').innerHTML = '<div class="empty">Carregando atendimentos…</div>';
+  await Promise.all([loadClientes(), loadTipos(), analistas.length ? null : loadAnalistas()]);
+  const a = $('#atFAna').value; $('#atFAna').innerHTML = '<option value="">Todos</option>' + analistas.map(x => `<option>${esc(x.nome)}</option>`).join(''); $('#atFAna').value = a;
+  await loadAtends();
+}
+async function loadAtends(){
+  const { data, error } = await sb.from('atendimentos').select('id,cliente_id,cliente_nome,data,dados,criado_por,criado_por_email,atualizado_por_email,updated_at').order('data', { ascending:false });
+  if (error){ $('#atBody').innerHTML = `<div class="empty">Não foi possível carregar os atendimentos: ${esc(error.message)}</div>`; $('#atSum').innerHTML = ''; return; }
+  atends = data || []; renderAtends();
+}
+function atFiltrados(){
+  const q = norm($('#atQ').value), an = $('#atFAna').value, tp = $('#atFTipo').value, st = $('#atFSit').value, de = $('#atDe').value, ate = $('#atAte').value;
+  return atends.filter(r => { const d = r.dados || {};
+    return (!q || norm(r.cliente_nome).includes(q)) && (!an || d.analista === an) && (!tp || d.tipo === tp) && (!st || d.situacao === st)
+      && (!de || (r.data && r.data >= de)) && (!ate || (r.data && r.data <= ate)); })
+    .sort((a,b) => String(b.data || '').localeCompare(String(a.data || '')));
+}
+function renderAtends(){
+  const rows = atFiltrados(), real = rows.filter(r => r.dados?.situacao === 'Realizado');
+  const presReal = real.filter(r => r.dados?.modalidade === 'Presencial');
+  $('#atSum').innerHTML = `<div><span>Atendimentos no filtro</span><b>${rows.length}</b></div><div><span>Realizados</span><b>${real.length}</b></div>
+    <div><span>KM rodado (realizados presenciais)</span><b>${km1(presReal.reduce((t,r) => t + (Number(r.dados.km) || 0), 0))}</b></div>
+    <div><span>Deslocamento (realizados)</span><b>${brl(presReal.reduce((t,r) => t + atCusto(r.dados), 0))}</b></div>`;
+  if (!atends.length){ $('#atBody').innerHTML = '<div class="empty">Nenhum atendimento registrado ainda. Clique em "+ Novo atendimento".</div>'; return; }
+  if (!rows.length){ $('#atBody').innerHTML = '<div class="empty">Nenhum atendimento encontrado para esse filtro.</div>'; return; }
+  $('#atBody').innerHTML = `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Data</th><th>Cliente</th><th>Tipo</th><th>Analista</th><th>Modalidade</th><th>Situação</th><th class="num">KM</th><th class="num">Deslocamento</th></tr></thead><tbody>
+  ${rows.map(r => { const d = r.dados || {}; return `<tr class="rec" tabindex="0" data-id="${r.id}"><td>${r.data ? fmtDate(r.data) : '—'}<small>${esc(d.periodo || '')}</small></td>
+    <td class="emp">${esc(r.cliente_nome || '—')}<small>${esc(d.produto || '')}</small></td><td>${esc(d.tipo || '—')}</td><td>${esc(d.analista || '—')}${canEditAt(r) ? '' : '<small>somente leitura</small>'}</td>
+    <td>${esc(d.modalidade || '')}</td><td><span class="sit ${SIT_CLS[d.situacao] || 'sit-c'}">${esc(d.situacao || '')}</span></td>
+    <td class="num">${d.modalidade === 'Presencial' ? km1(d.km) : '—'}</td><td class="num">${d.modalidade === 'Presencial' ? brl(atCusto(d)) : '—'}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+  $('#atBody').querySelectorAll('tr.rec').forEach(tr => { const o = () => openAtend(tr.dataset.id); tr.onclick = o; tr.onkeydown = e => { if (e.key === 'Enter') o(); }; });
+}
+['#atQ','#atFAna','#atFTipo','#atFSit','#atDe','#atAte'].forEach(id => $(id).addEventListener('input', renderAtends));
+
+const AT_F = { aTipo:'tipo', aSit:'situacao', aData:'data', aPer:'periodo', aAna:'analista', aMod:'modalidade', aProd:'produto', aCham:'chamado', aPart:'participantes', aDesc:'descricao', aProx:'proximos', aKm:'km', aVkm:'valor_km', aPed:'pedagio' };
+const AT_NUM = ['km','valor_km','pedagio'];
+function openAtend(id){
+  atCur = id ? atends.find(r => r.id === id) : null;
+  let ultimo = ''; try { ultimo = localStorage.getItem('ultimoAnalista') || ''; } catch {}
+  const d = atCur ? { ...(atCur.dados || {}), data: atCur.data || '' } : { situacao:'Agendado', periodo:'Dia inteiro', modalidade:'Presencial', analista: ultimo, data: iso(new Date()), anexos:[] };
+  atDraft = { cliente_id: atCur?.cliente_id ?? null, anexos: [...(d.anexos || [])] };
+  $('#aAna').innerHTML = '<option value="">Selecione</option>' + analistas.map(x => `<option>${esc(x.nome)}</option>`).join('') + (d.analista && !analistas.some(x => x.nome === d.analista) ? `<option>${esc(d.analista)}</option>` : '');
+  fillTipoSelects();
+  $('#aCli').value = atCur?.cliente_nome || '';
+  Object.entries(AT_F).forEach(([el, f]) => { $('#' + el).value = d[f] ?? ''; });
+  if (d.tipo && ![...$('#aTipo').options].some(o => o.value === d.tipo)) $('#aTipo').insertAdjacentHTML('beforeend', `<option>${esc(d.tipo)}</option>`), $('#aTipo').value = d.tipo;
+  const ed = canEditAt(atCur);
+  $('#atModal').querySelectorAll('input,select,textarea').forEach(x => { if (x.id !== 'aAnxInput') x.disabled = !ed; });
+  $('#atForm').querySelectorAll('.f').forEach(x => x.classList.toggle('ro', !ed));
+  $('#atSave').hidden = !ed; $('#aRecalc').hidden = !ed; $('#aAddAnx').hidden = !ed || !atCur; $('#atDel').hidden = !(atCur && ed);
+  $('#atTitle').textContent = atCur ? `${atCur.cliente_nome || 'Atendimento'} – ${atCur.data ? fmtDate(atCur.data) : ''}` : 'Novo atendimento';
+  $('#atOwner').textContent = atCur ? `Registrado por ${atCur.criado_por_email || '—'}${atCur.atualizado_por_email && atCur.atualizado_por_email !== atCur.criado_por_email ? ' · alterado por ' + atCur.atualizado_por_email : ''}${ed ? '' : ' · somente leitura (só quem registrou ou um administrador pode editar)'}` : '';
+  $('#atErr').textContent = ''; atDeslUpdate(); renderAnexos(); $('#atModal').hidden = false; if (ed) $('#aCli').focus();
+}
+function clienteDoForm(){ const n = norm($('#aCli').value); return clientes.find(c => norm(c.nome) === n) || null; }
+function atDeslUpdate(){
+  const pres = $('#aMod').value === 'Presencial'; $('#atDesl').hidden = !pres;
+  const c = clienteDoForm();
+  $('#atDeslSrc').textContent = c ? `· cliente do cadastro, base ${c.base}${c.cidade ? ', ' + c.cidade + (c.uf ? ' - ' + c.uf : '') : ''}` : ($('#aCli').value.trim() ? '· cliente fora do cadastro: preencha o KM manualmente' : '');
+  const d = readAtForm(); $('#aTot').textContent = brl(atCusto(d));
+}
+function aplicarKmCliente(force){
+  const c = clienteDoForm(); if (!c) return false;
+  if (force || $('#aKm').value === '') $('#aKm').value = kmRdv(c);
+  if (force || $('#aVkm').value === '') $('#aVkm').value = Number(c.valor_km) || 1.35;
+  if (force || $('#aPed').value === '') $('#aPed').value = Number(c.pedagio) || 0;
+  return true;
+}
+function readAtForm(){ const o = {}; Object.entries(AT_F).forEach(([el, f]) => { const v = $('#' + el).value; o[f] = AT_NUM.includes(f) ? (v === '' ? null : Number(v)) : (typeof v === 'string' ? v.trim() : v); }); return o; }
+$('#aCli').addEventListener('change', () => { aplicarKmCliente(true); atDeslUpdate(); });
+['#aMod','#aKm','#aVkm','#aPed'].forEach(id => $(id).addEventListener('input', () => { if (id === '#aMod' && $('#aMod').value === 'Presencial') aplicarKmCliente(false); atDeslUpdate(); }));
+$('#aRecalc').addEventListener('click', () => { if (!aplicarKmCliente(true)) flash('Cliente não encontrado no cadastro.'); atDeslUpdate(); });
+$('#atCancel').addEventListener('click', () => { $('#atModal').hidden = true; });
+$('#btnNewAt').addEventListener('click', () => openAtend(null));
+$('#atSave').addEventListener('click', async () => {
+  const d = readAtForm(), nome = $('#aCli').value.trim(), c = clienteDoForm();
+  if (!nome){ $('#atErr').textContent = 'Informe o cliente.'; return; }
+  if (!d.data){ $('#atErr').textContent = 'Informe a data.'; return; }
+  if (!d.tipo){ $('#atErr').textContent = 'Selecione o tipo de atendimento.'; return; }
+  if (d.modalidade !== 'Presencial'){ d.km = null; d.pedagio = null; }
+  d.anexos = atDraft.anexos; d.valor_total = atCusto(d);
+  const data = d.data; delete d.data;
+  const payload = { cliente_nome: c ? c.nome : nome, cliente_id: c ? c.id : null, data, dados: d };
+  $('#atSave').disabled = true;
+  const res = atCur ? await sb.from('atendimentos').update(payload).eq('id', atCur.id).select('id').single() : await sb.from('atendimentos').insert(payload).select('id').single();
+  $('#atSave').disabled = false;
+  if (res.error){ $('#atErr').textContent = 'Não foi possível salvar: ' + res.error.message; return; }
+  try { if (d.analista) localStorage.setItem('ultimoAnalista', d.analista); } catch {}
+  const novo = !atCur; await loadAtends();
+  if (novo){ openAtend(res.data.id); flash('Atendimento salvo. Agora você pode anexar arquivos.'); } else { $('#atModal').hidden = true; flash('Atendimento salvo.'); }
+});
+$('#atDel').addEventListener('click', async () => {
+  const v = await ask('Excluir atendimento?', 'O atendimento e os anexos dele serão apagados definitivamente.', [['Cancelar','b-ghost',null],['Excluir','b-danger','ok']]);
+  if (!v) return;
+  const { data, error } = await sb.from('atendimentos').delete().eq('id', atCur.id).select('id');
+  if (error || !data?.length){ $('#atErr').textContent = 'Não foi possível excluir' + (error ? ': ' + error.message : ': sem permissão.'); return; }
+  const paths = (atDraft.anexos || []).map(a => a.path); if (paths.length) await sb.storage.from('arquivos').remove(paths);
+  $('#atModal').hidden = true; flash('Atendimento excluído.'); loadAtends();
+});
+function renderAnexos(){
+  const ed = canEditAt(atCur);
+  $('#aAnx').innerHTML = atDraft.anexos.length ? atDraft.anexos.map((a, i) => `<span>${esc(a.nome)}<button type="button" data-anxdown="${i}">Baixar</button>${ed ? `<button type="button" data-anxdel="${i}" aria-label="Remover anexo">×</button>` : ''}</span>`).join('')
+    : `<span class="lock-tag" style="border:0;background:none;padding:0">${atCur ? 'Nenhum anexo.' : 'Salve o atendimento para anexar arquivos (lista de presença, fotos, ata).'}</span>`;
+}
+$('#aAddAnx').addEventListener('click', () => { $('#aAnxInput').value = ''; $('#aAnxInput').click(); });
+$('#aAnxInput').addEventListener('change', async () => {
+  const files = [...$('#aAnxInput').files]; if (!files.length || !atCur) return;
+  for (const f of files){
+    const path = `atendimentos/${atCur.id}/${Date.now()}_${f.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_')}`;
+    const { error } = await sb.storage.from('arquivos').upload(path, f, { upsert:true });
+    if (error){ flash('Erro ao anexar ' + f.name + ': ' + error.message); continue; }
+    atDraft.anexos.push({ path, nome: f.name });
+  }
+  const dados = { ...(atCur.dados || {}), anexos: atDraft.anexos };
+  const { error } = await sb.from('atendimentos').update({ dados }).eq('id', atCur.id);
+  if (error) flash('Arquivo enviado, mas não foi possível registrar: ' + error.message); else { atCur.dados = dados; flash('Anexo adicionado.'); }
+  renderAnexos();
+});
+$('#aAnx').addEventListener('click', async e => {
+  const dn = e.target.closest('[data-anxdown]'), dl = e.target.closest('[data-anxdel]');
+  if (dn){ const a = atDraft.anexos[dn.dataset.anxdown]; const { data, error } = await sb.storage.from('arquivos').download(a.path);
+    if (error) flash('Não foi possível baixar: ' + error.message); else await save(a.nome, data); }
+  if (dl){ const i = Number(dl.dataset.anxdel), a = atDraft.anexos[i];
+    const v = await ask('Remover anexo?', `"${a.nome}" será apagado.`, [['Cancelar','b-ghost',null],['Remover','b-danger','ok']]); if (!v) return;
+    await sb.storage.from('arquivos').remove([a.path]); atDraft.anexos.splice(i, 1);
+    const dados = { ...(atCur.dados || {}), anexos: atDraft.anexos }; await sb.from('atendimentos').update({ dados }).eq('id', atCur.id); atCur.dados = dados; renderAnexos(); }
+});
+$('#btnAtXlsx').addEventListener('click', async () => {
+  if (!window.ExcelJS){ flash('Biblioteca do Excel não carregou. Recarregue a página.'); return; }
+  const rows = atFiltrados(); if (!rows.length){ flash('Nenhum atendimento no filtro atual.'); return; }
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Atendimentos', { views:[{ state:'frozen', ySplit:1 }] });
+  ws.columns = [['Data',11],['Período',11],['Cliente',38],['Base',6],['Cidade',20],['Tipo',24],['Analista',22],['Modalidade',11],['Situação',11],['Produto',14],['Nº chamado',12],
+    ['KM ida+volta (+10%)',14],['Valor km',10],['Valor km rodado',14],['Pedágio',10],['Total deslocamento',15],['Participantes',30],['O que foi feito',50],['Próximos passos',40],['Registrado por',28]].map(([header, width]) => ({ header, width }));
+  rows.forEach(r => { const d = r.dados || {}, c = clientes.find(x => x.id === r.cliente_id) || {}, pres = d.modalidade === 'Presencial';
+    ws.addRow([r.data ? (([y,m,dd]) => new Date(Date.UTC(y, m - 1, dd)))(r.data.split('-').map(Number)) : '', d.periodo, r.cliente_nome, c.base || '', c.cidade || '', d.tipo, d.analista, d.modalidade, d.situacao, d.produto, d.chamado,
+      pres ? Number(d.km) || 0 : null, pres ? Number(d.valor_km) || 0 : null, pres ? (Number(d.km) || 0) * (Number(d.valor_km) || 0) : null, pres ? Number(d.pedagio) || 0 : null, pres ? atCusto(d) : null,
+      d.participantes, d.descricao, d.proximos, r.criado_por_email]); });
+  const last = ws.rowCount + 1, tr = ws.getRow(last);
+  tr.getCell(3).value = 'TOTAL (realizados)';
+  [[12,'L'],[14,'N'],[15,'O'],[16,'P']].forEach(([i, L]) => tr.getCell(i).value = { formula:`SUMIFS(${L}2:${L}${last-1},I2:I${last-1},"Realizado")` });
+  tr.font = { bold:true };
+  ws.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } }; ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF02416C' } };
+  ws.getColumn(1).numFmt = 'dd/mm/yyyy'; [13,14,15,16].forEach(i => ws.getColumn(i).numFmt = '"R$" #,##0.00'); ws.getColumn(12).numFmt = '#,##0.0';
+  [17,18,19].forEach(i => ws.getColumn(i).alignment = { wrapText:true, vertical:'top' });
+  ws.autoFilter = { from:'A1', to:'T1' };
+  const de = $('#atDe').value, ate = $('#atAte').value;
+  const buf = await wb.xlsx.writeBuffer();
+  await save(`Atendimentos${de ? '_' + de : ''}${ate ? '_a_' + ate : ''}.xlsx`, new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); flash('Excel exportado.');
+});
+// fechar janelas com Esc / clique fora
+['#cliModal','#atModal'].forEach(id => { $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).hidden = true; }); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('#cliModal').hidden = true; $('#atModal').hidden = true; } });
 
 /* ---------- armazenamento (admin) ---------- */
 const LIMITE_MB = 500; // limite do plano gratuito do Supabase
