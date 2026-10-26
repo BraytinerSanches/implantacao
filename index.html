@@ -254,7 +254,7 @@ body:not([data-screen="clientes"]) #clientesView{display:none}
 .sr-t tr:nth-child(even) td{background:#fff}
 .sr-t td.empty{color:#888;text-align:center}
 .sr-foot{margin-top:14px;font-size:11px;color:#888;text-align:right}
-#configView{max-width:1100px;margin:0 auto;padding:22px 20px 40px}
+#configView{max-width:1300px;margin:0 auto;padding:22px 20px 40px}
 .ctabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
 .ctabs button{background:transparent;border:0;border-radius:0;color:var(--muted);padding:10px 14px;border-bottom:3px solid transparent;white-space:nowrap}
 .ctabs button.active{color:var(--ink);border-bottom-color:var(--orange)}
@@ -351,6 +351,7 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 .tcount.over .bar2 i{background:#B3261E}.tcount.ok .bar2 i{background:#2E9E62}
 .pa-row input[data-pt]{text-align:center}
 body.no-dias #tempoCard, body.no-dias #schedInfo, body.no-dias #imPeriodo{display:none!important}
+.user .cfg-on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .sched-ok{color:#1F6B47}.sched-warn{color:#9A4A00;font-weight:600}
 .os-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
 .os-line span{color:var(--muted)}
@@ -478,15 +479,13 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button class="b-alt" id="btnPng">Baixar imagem</button>
     <button class="b-danger" id="btnDelete" hidden>Excluir</button>
   </div>
-  <div class="user"><span id="userEmail"></span><button class="b-alt" id="btnMyPass">Minha senha</button><button class="b-alt" id="btnLogout">Sair</button></div>
+  <div class="user"><span id="userEmail"></span><button class="b-alt adm-only" id="btnCfgTop">Configurações</button><button class="b-alt" id="btnMyPass">Minha senha</button><button class="b-alt" id="btnLogout">Sair</button></div>
 </header>
 
 <nav class="mainnav" aria-label="Módulos">
   <button type="button" data-go="impl">Implantações</button>
   <button type="button" data-go="atend">Atendimentos</button>
-  <button type="button" data-go="clientes">Clientes</button>
   <button type="button" data-go="status">Status Report</button>
-  <button type="button" data-go="config" class="adm-only">Configurações</button>
 </nav>
 
 
@@ -704,20 +703,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div id="atBody"></div>
 </section>
 
-<section id="clientesView">
-  <div class="ls-bar">
-    <h2>Clientes</h2>
-    <button class="b-alt" id="btnCliXlsx" style="color:var(--ink)">Exportar Excel</button>
-    <button class="b-main" id="btnNewCli">+ Novo cliente</button>
-  </div>
-  <div class="flt" style="grid-template-columns:2fr 1fr 1fr 1fr">
-    <label class="f">Buscar<input type="text" id="cliQ" placeholder="Empresa, CCO ou cidade"></label>
-    <label class="f">Base<select id="cliFBase"><option value="">Todas</option><option>SP</option><option>MG</option><option>PE</option></select></label>
-    <label class="f">Pacote<select id="cliFPac"><option value="">Todos</option></select></label>
-    <label class="f">UF<select id="cliFUf"><option value="">Todas</option></select></label>
-  </div>
-  <div id="cliBody"></div>
-</section>
+
 
 <section id="statusView">
   <div id="stListWrap">
@@ -846,6 +832,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div class="ls-bar"><h2>Configurações</h2></div>
   <div class="ctabs" role="tablist">
     <button type="button" data-ct="users" class="active">Usuários</button>
+    <button type="button" data-ct="cli">Clientes</button>
     <button type="button" data-ct="ana">Analistas</button>
     <button type="button" data-ct="cat">Catálogo de atividades</button>
     <button type="button" data-ct="chk">Checklist</button>
@@ -887,6 +874,20 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <button type="button" class="b-add" id="btnAddChkItem">+ Adicionar item</button>
     </div>
   </div>
+<div id="cfgCli" hidden>
+  <div class="ls-bar">
+    <h3 class="cfgh" style="flex:1">Clientes</h3>
+    <button class="b-alt" id="btnCliXlsx" style="color:var(--ink)">Exportar Excel</button>
+    <button class="b-main" id="btnNewCli">+ Novo cliente</button>
+  </div>
+  <div class="flt" style="grid-template-columns:2fr 1fr 1fr 1fr">
+    <label class="f">Buscar<input type="text" id="cliQ" placeholder="Empresa, CCO ou cidade"></label>
+    <label class="f">Base<select id="cliFBase"><option value="">Todas</option><option>SP</option><option>MG</option><option>PE</option></select></label>
+    <label class="f">Pacote<select id="cliFPac"><option value="">Todos</option></select></label>
+    <label class="f">UF<select id="cliFUf"><option value="">Todas</option></select></label>
+  </div>
+  <div id="cliBody"></div>
+</div>
   <div id="cfgTipos" hidden>
     <div class="det-card">
       <h3 class="cfgh">Tipos de atendimento</h3>
@@ -1257,6 +1258,7 @@ function show(screen){
   $('#subtitle').textContent = {impl:'Acompanhamento das implantações', implDet:'Acompanhamento das implantações', list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status das implantações', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
   const mod = {impl:'impl', implDet:'impl', list:'list', editor:'list', config:'config', status:'status', atend:'atend', clientes:'clientes'}[screen];
   document.querySelectorAll('.mainnav button').forEach(b => b.classList.toggle('active', b.dataset.go === mod));
+  $('#btnCfgTop').classList.toggle('cfg-on', mod === 'config');
   if (screen === 'editor') fitPreview();
   window.scrollTo({top:0});
 }
@@ -1389,9 +1391,10 @@ async function go(mod){
   else if (mod === 'config' && isAdmin){ show('config'); cfgTab('users'); }
   else if (mod === 'status'){ show('status'); stShowList(); loadImpl().then(renderStCards); }
   else if (mod === 'atend'){ show('atend'); openAtendView(); }
-  else if (mod === 'clientes'){ show('clientes'); loadClientes().then(renderClientes); }
+
 }
 document.querySelectorAll('.mainnav button').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+$('#btnCfgTop').addEventListener('click', () => go('config'));
 
 async function loadUsers(){
   $('#usersBody').innerHTML = '<div class="empty">Carregando usuários...</div>';
@@ -1621,7 +1624,7 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos'; $('#cfgCli').hidden = t !== 'cli';
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'cat'){ loadCatalog(); }
@@ -1629,6 +1632,7 @@ function cfgTab(t){
   else if (t === 'prod'){ loadCatalog().then(loadProdutos); }
   else if (t === 'fer'){ loadFeriados().then(renderFeriados); }
   else if (t === 'tipos'){ loadTipos(); }
+  else if (t === 'cli'){ loadClientes().then(renderClientes); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
 
