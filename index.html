@@ -353,6 +353,11 @@ table.cro textarea:hover,table.cro textarea:focus{border-color:var(--line);backg
 body.no-dias #tempoCard, body.no-dias #schedInfo, body.no-dias #imPeriodo{display:none!important}
 .user .cfg-on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .sched-ok{color:#1F6B47}.sched-warn{color:#9A4A00;font-weight:600}
+.st-tipos{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.st-tipos button{background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px}
+.st-tipos button[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:#fff}
+.st-tipos button b{font-weight:600;opacity:.8;margin-left:4px}
+.st-tag{align-self:flex-start;width:max-content;display:inline-block;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-bottom:6px}
 .os-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
 .os-line span{color:var(--muted)}
 .os-line button{padding:5px 10px;font-size:13px}
@@ -484,7 +489,8 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
 
 <nav class="mainnav" aria-label="Módulos">
   <button type="button" data-go="impl">Implantações</button>
-  <button type="button" data-go="atend">Atendimentos</button>
+  <button type="button" data-go="upsell">UpSell</button>
+  <button type="button" data-go="ativ">Atividades</button>
   <button type="button" data-go="status">Status Report</button>
 </nav>
 
@@ -517,9 +523,9 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
 
 <section id="implView">
   <div class="ls-bar">
-    <h2>Implantações</h2>
-    <input type="text" id="implSearch" placeholder="Buscar por cliente ou analista" aria-label="Buscar implantação">
-    <button class="b-alt" id="btnOsImpl" style="color:var(--ink)">Criar implantação completa</button>
+    <h2 id="implListTitle">Implantações</h2>
+    <input type="text" id="implSearch" placeholder="Buscar por cliente ou analista" aria-label="Buscar">
+    <button class="b-alt" id="btnOsImpl" style="color:var(--ink)">Criar pela OS</button>
     <button class="b-main" id="btnNewImpl">+ Nova implantação</button>
     <input type="file" id="osFileInput" accept=".xlsx" hidden>
   </div>
@@ -543,7 +549,8 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div id="implCapture">
   <div class="det-card" id="implForm">
     <div class="row">
-      <label class="f">Cliente<input type="text" id="imNome" placeholder="Nome da empresa"></label>
+      <label class="f">Cliente<input type="text" id="imNome" placeholder="Nome da empresa" list="cliSug"></label>
+      <label class="f" id="imTipoAtvWrap" hidden>Tipo de atividade<select id="imTipoAtv"><option value="">Selecione</option></select></label>
       <label class="f">Analista Cittati<select id="imCittati"><option value="">Selecione</option></select></label>
       <label class="f">Responsável do cliente<input type="text" id="imCliente"></label>
       <label class="f">Produto contratado<select id="imProdutos"><option value="">Selecione</option></select></label>
@@ -571,11 +578,11 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" class="active" data-tab="atv">Atividades</button>
     <button type="button" data-tab="cro">Cronograma</button>
     <button type="button" data-tab="chk">Checklist <span class="tabpct" id="chkTabPct"></span></button>
-    <button type="button" data-tab="ent">Entrega para Suporte</button>
+    <button type="button" data-tab="ent" id="tabEntBtn">Entrega para Suporte</button>
   </div>
   <div id="tabAtv">
   <div class="det-card chamado-card">
-    <label class="f" style="max-width:320px">Nº do chamado de implantação<input type="text" id="imChamado" placeholder="Ex.: 311851"></label>
+    <label class="f" style="max-width:320px">Nº do chamado<input type="text" id="imChamado" placeholder="Ex.: 311851"></label>
     <span class="auto-tag" style="align-self:end;padding-bottom:9px">Preenche automaticamente o item correspondente do Checklist</span>
     <div style="margin-left:auto;align-self:end;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="schedInfo" style="font-size:13px"></span>
@@ -712,6 +719,9 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <select id="stFilter" aria-label="Filtrar por status" style="max-width:200px"><option value="">Todos os status</option><option>Não iniciado</option><option>Em andamento</option><option>Atrasado</option><option>Paralisado</option><option>Cancelado</option><option>Concluído</option></select>
       <input type="text" id="stSearch" placeholder="Buscar por cliente ou analista" aria-label="Buscar status report">
     </div>
+    <div class="st-tipos" id="stTipos" role="group" aria-label="Visualizar">
+      <button type="button" data-st-tipo="">Todos</button><button type="button" data-st-tipo="Implantação">Implantações</button><button type="button" data-st-tipo="UpSell">UpSell</button><button type="button" data-st-tipo="Atividade">Atividades</button>
+    </div>
     <div id="stCards" class="st-cards"></div>
   </div>
   <div id="stDetail" hidden>
@@ -719,7 +729,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <h2 id="stTitle">Status Report</h2>
       <span class="autosave" id="stAuto"></span>
       <button class="b-alt" id="btnStBack" style="color:var(--ink)">Voltar aos cards</button>
-      <button class="b-alt" id="btnStOpenImpl" style="color:var(--ink)">Abrir implantação</button>
+      <button class="b-alt" id="btnStOpenImpl" style="color:var(--ink)">Abrir cadastro</button>
       <button class="b-alt" data-stdl="png" style="color:var(--ink)">Baixar imagem</button>
       <button class="b-alt" data-stdl="pdf" style="color:var(--ink)">Baixar PDF</button>
       <button class="b-main" data-stdl="pptx">Baixar PowerPoint</button>
@@ -766,7 +776,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <div class="msg-err" id="cliErr" role="alert"></div>
     <div class="mb">
       <button type="button" class="b-danger" id="cliDel" hidden style="margin-right:auto">Excluir</button>
-      <button type="button" class="b-ghost" id="cliAt">Ver atendimentos</button>
+      <button type="button" class="b-ghost" id="cliAt" hidden>Ver atendimentos</button>
       <button type="button" class="b-ghost" id="cliCancel">Cancelar</button>
       <button type="button" class="b-save" id="cliSave">Salvar</button>
     </div>
@@ -838,7 +848,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-ct="chk">Checklist</button>
     <button type="button" data-ct="prod">Produtos</button>
     <button type="button" data-ct="fer">Feriados</button>
-    <button type="button" data-ct="tipos">Tipos de atendimento</button>
+    <button type="button" data-ct="tipos">Tipos de atividade</button>
   </div>
   <div id="cfgUsers">
   <div id="storageCard"></div>
@@ -890,8 +900,8 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
 </div>
   <div id="cfgTipos" hidden>
     <div class="det-card">
-      <h3 class="cfgh">Tipos de atendimento</h3>
-      <p class="cfgp">Opções do campo "Tipo" na guia Atendimentos. Remover um tipo não altera os atendimentos já registrados.</p>
+      <h3 class="cfgh">Tipos de atividade</h3>
+      <p class="cfgp">Opções do campo "Tipo de atividade" na guia Atividades. Remover um tipo não altera as atividades já cadastradas.</p>
       <div id="tipoList"></div>
       <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
         <input type="text" id="tipoNew" placeholder="Novo tipo (ex.: Visita técnica)" aria-label="Novo tipo de atendimento">
@@ -1255,8 +1265,8 @@ async function checkAdmin(uid){
 
 function show(screen){
   document.body.dataset.screen = screen;
-  $('#subtitle').textContent = {impl:'Acompanhamento das implantações', implDet:'Acompanhamento das implantações', list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status das implantações', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
-  const mod = {impl:'impl', implDet:'impl', list:'list', editor:'list', config:'config', status:'status', atend:'atend', clientes:'clientes'}[screen];
+  $('#subtitle').textContent = {impl: cfgTipo().sub, implDet: cfgTipo().sub, list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status de implantações, UpSell e atividades', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
+  const mod = {impl: modoTipo, implDet: modoTipo, list:'list', editor:'list', config:'config', status:'status'}[screen];
   document.querySelectorAll('.mainnav button').forEach(b => b.classList.toggle('active', b.dataset.go === mod));
   $('#btnCfgTop').classList.toggle('cfg-on', mod === 'config');
   if (screen === 'editor') fitPreview();
@@ -1386,11 +1396,10 @@ async function leaveGuard(){
 }
 async function go(mod){
   if (!(await leaveGuard())) return;
-  if (mod === 'impl'){ show('impl'); loadImpl(); }
+  if (TIPOS[mod]){ modoTipo = mod; aplicarModoTipo(); $('#implSearch').value = ''; show('impl'); loadImpl(); if (!clientes.length) loadClientes().catch(() => {}); if (!tipos.length) loadTipos().catch(() => {}); }
   else if (mod === 'list'){ show('list'); loadList(); }
   else if (mod === 'config' && isAdmin){ show('config'); cfgTab('users'); }
   else if (mod === 'status'){ show('status'); stShowList(); loadImpl().then(renderStCards); }
-  else if (mod === 'atend'){ show('atend'); openAtendView(); }
 
 }
 document.querySelectorAll('.mainnav button').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
@@ -1461,7 +1470,21 @@ $('#btnDelete').addEventListener('click', async () => {
   currentId = null; markClean(); updateDeleteBtn(); show('list'); loadList();
 });
 
-/* ---------- implantações ---------- */
+/* ---------- implantações / upsell / atividades ---------- */
+const TIPOS = {
+  impl:   { tipo:'Implantação', titulo:'Implantações', novo:'+ Nova implantação', nova:'Nova implantação', vazio:'Nenhuma implantação cadastrada ainda.', sub:'Acompanhamento das implantações', os:true,  entrega:true },
+  upsell: { tipo:'UpSell',      titulo:'UpSell',        novo:'+ Novo UpSell',      nova:'Novo UpSell',      vazio:'Nenhum UpSell cadastrado ainda.',      sub:'Acompanhamento dos UpSells',       os:true,  entrega:false },
+  ativ:   { tipo:'Atividade',   titulo:'Atividades',    novo:'+ Nova atividade',   nova:'Nova atividade',   vazio:'Nenhuma atividade cadastrada ainda.',  sub:'Retreinamentos, visitas técnicas e treinamentos', os:false, entrega:false },
+};
+const KEY_DO_TIPO = { 'Implantação':'impl', 'UpSell':'upsell', 'Atividade':'ativ' };
+let modoTipo = 'impl';
+const tipoDe = r => r?.tipo || 'Implantação';
+const cfgTipo = () => TIPOS[modoTipo];
+function aplicarModoTipo(){
+  const t = cfgTipo();
+  $('#implListTitle').textContent = t.titulo; $('#btnNewImpl').textContent = t.novo; $('#btnOsImpl').hidden = !t.os;
+}
+
 let impls = [], currentImpl = null;
 const STATUS_CLS = {'Concluído':'st-c','Em andamento':'st-a','Atenção':'st-w','Aguardando':'st-g'};
 function implStats(atv, resp){
@@ -1473,22 +1496,23 @@ function implStats(atv, resp){
 const pbar = p => `<div class="pcell"><div class="pbar"><i class="${p>=100?'full':''}" style="width:${Math.min(p,100)}%"></i></div>${p}%</div>`;
 
 async function loadImpl(){
-  $('#implBody').innerHTML = '<div class="empty">Carregando implantações...</div>';
-  const { data, error } = await sb.from('implantacoes').select('id,cliente,dados,atualizado_por_email,criado_por_email,updated_at').order('updated_at', { ascending:false });
-  if (error){ $('#implBody').innerHTML = `<div class="empty">Não foi possível carregar as implantações: ${esc(error.message)}</div>`; return; }
+  $('#implBody').innerHTML = '<div class="empty">Carregando...</div>';
+  const { data, error } = await sb.from('implantacoes').select('id,cliente,tipo,dados,atualizado_por_email,criado_por_email,updated_at').order('updated_at', { ascending:false });
+  if (error){ $('#implBody').innerHTML = `<div class="empty">Não foi possível carregar os dados: ${esc(error.message)}</div>`; return; }
   impls = data; renderImpl();
 }
 function renderImpl(){
   const q = $('#implSearch').value.trim().toLowerCase();
-  const rows = impls.filter(r => { const c = r.dados?.cliente || {}; return !q || (r.cliente||'').toLowerCase().includes(q) || (c.cittati||'').toLowerCase().includes(q); });
-  if (!impls.length){ $('#implBody').innerHTML = '<div class="empty">Nenhuma implantação cadastrada ainda. Clique em "+ Nova implantação" para começar.</div>'; return; }
-  if (!rows.length){ $('#implBody').innerHTML = '<div class="empty">Nenhuma implantação encontrada para essa busca.</div>'; return; }
-  $('#implBody').innerHTML = `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Cliente</th><th>Analista Cittati</th><th>Produtos</th><th>Progresso</th><th>Atividades</th><th>Última atualização</th></tr></thead><tbody>
+  const t = cfgTipo(), doTipo = impls.filter(r => tipoDe(r) === t.tipo);
+  const rows = doTipo.filter(r => { const c = r.dados?.cliente || {}; return !q || (r.cliente||'').toLowerCase().includes(q) || (c.cittati||'').toLowerCase().includes(q) || (c.tipoAtividade||'').toLowerCase().includes(q); });
+  if (!doTipo.length){ $('#implBody').innerHTML = `<div class="empty">${t.vazio} Clique em "${t.novo}" para começar.</div>`; return; }
+  if (!rows.length){ $('#implBody').innerHTML = '<div class="empty">Nada encontrado para essa busca.</div>'; return; }
+  $('#implBody').innerHTML = `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Cliente</th><th>Analista Cittati</th><th>${t.tipo === 'Atividade' ? 'Tipo de atividade' : 'Produtos'}</th><th>Progresso</th><th>Atividades</th><th>Última atualização</th></tr></thead><tbody>
   ${rows.map(r => { const c = r.dados?.cliente || {}; const st = implStats(r.dados?.atividades); const up = new Date(r.updated_at);
     return `<tr class="rec" tabindex="0" data-id="${r.id}">
       <td class="emp">${esc(r.cliente||'Sem nome')}<small>${esc(c.cliente ? 'Resp. cliente: '+c.cliente : '')}</small></td>
       <td>${esc(c.cittati||'—')}</td>
-      <td><div class="chipline">${(c.produtos||[]).map(p=>`<span>${esc(p)}</span>`).join('') || '—'}</div></td>
+      <td>${t.tipo === 'Atividade' ? esc(c.tipoAtividade || '—') : `<div class="chipline">${(c.produtos||[]).map(p=>`<span>${esc(p)}</span>`).join('') || '—'}</div>`}</td>
       <td>${pbar(st.prog)}</td>
       <td>${st.concl} de ${st.n} concluídas${st.aten ? `<small style="color:#9A4A00">${st.aten} em atenção</small>` : ''}</td>
       <td>${up.toLocaleDateString('pt-BR')}<small>${esc(r.atualizado_por_email||r.criado_por_email||'')}</small></td></tr>`; }).join('')}
@@ -1499,7 +1523,13 @@ $('#implSearch').addEventListener('input', renderImpl);
 
 function openImpl(id){
   const r = id ? impls.find(x => x.id === id) : null;
-  currentImpl = r ? { id:r.id, dados: JSON.parse(JSON.stringify(r.dados||{})) } : { id:null, dados:{ cliente:{nome:'',cittati:'',cliente:'',produtos:[]}, atividades:[] } };
+  currentImpl = r ? { id:r.id, tipo: tipoDe(r), dados: JSON.parse(JSON.stringify(r.dados||{})) } : { id:null, tipo: cfgTipo().tipo, dados:{ cliente:{nome:'',cittati:'',cliente:'',produtos:[]}, atividades:[] } };
+  { const ehAtv = currentImpl.tipo === 'Atividade', k = KEY_DO_TIPO[currentImpl.tipo] || 'impl';
+    if (k !== modoTipo){ modoTipo = k; aplicarModoTipo(); }
+    $('#tabEntBtn').hidden = !TIPOS[k].entrega; $('#imTipoAtvWrap').hidden = !ehAtv; $('#btnOsUp').closest('.os-line').hidden = !TIPOS[k].os;
+    const v = currentImpl.dados.cliente?.tipoAtividade || '';
+    $('#imTipoAtv').innerHTML = '<option value="">Selecione</option>' + tipos.map(x => `<option>${esc(x.nome)}</option>`).join('') + (v && !tipos.some(x => x.nome === v) ? `<option>${esc(v)}</option>` : '');
+    $('#imTipoAtv').value = v; }
   const c = currentImpl.dados.cliente || {};
   $('#imNome').value = c.nome || r?.cliente || ''; setImplAnalista(c.cittati || '');
   $('#imCliente').value = c.cliente || ''; setImplProduto((c.produtos||[]).join(' + '));
@@ -1518,7 +1548,8 @@ const PRODUTOS = ['Flits','Gool','ICS','CDF','NAAV','VISTTA','Outros'];
 function readImplHeader(){
   return { nome:$('#imNome').value.trim(), cittati:$('#imCittati').value.trim(), cliente:$('#imCliente').value.trim(),
     produtos:$('#imProdutos').value ? [$('#imProdutos').value] : [],
-    coordenador:$('#imCoord').value.trim(), produto:$('#imProduto').value, inicio:$('#imInicio').value, fim:$('#imFim').value, statusManual:$('#imStatusManual').value };
+    coordenador:$('#imCoord').value.trim(), produto:$('#imProduto').value, inicio:$('#imInicio').value, fim:$('#imFim').value, statusManual:$('#imStatusManual').value,
+    tipoAtividade: $('#imTipoAtvWrap').hidden ? undefined : $('#imTipoAtv').value };
 }
 const RESP_OPTS = ['Cittati','Cliente'];
 const STATUS_OPTS = ['Aguardando','Em andamento','Atenção','Concluído'];
@@ -1573,7 +1604,7 @@ function renderDatalist(){
   $('#atvSug').innerHTML = [...names].map(n => `<option value="${esc(n)}">`).join('');
 }
 function renderImplDet(){
-  $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação';
+  $('#implTitle').textContent = $('#imNome').value.trim() || cfgTipo().nova;
   renderGroupsImpl(); renderAtvTable(); renderDatalist(); renderCatalog();
 }
 
@@ -2031,8 +2062,9 @@ $('#osFileInput').addEventListener('change', async () => {
   if (!produtos.length) await loadProdutos();
   if (!analistas.length) await loadAnalistas();
   osPending = { file, os };
+  $('#osTitle').textContent = `${cfgTipo().nova} pela OS`; $('#osCreate').textContent = 'Criar';
   const sug = suggestProduto(os), opt = (arr, v) => arr.map(x => `<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
-  const dup = impls.find(r => norm(r.cliente) === norm(os.nome));
+  const dup = impls.find(r => tipoDe(r) === cfgTipo().tipo && norm(r.cliente) === norm(os.nome));
   $('#osFileLabel').innerHTML = `Arquivo validado: <b>${esc(file.name)}</b>. Confira os dados e complete o que a OS não informa.`;
   $('#osErr').textContent = '';
   $('#osBody').innerHTML = `<div class="os-grid">
@@ -2055,7 +2087,7 @@ $('#osFileInput').addEventListener('change', async () => {
       <dt>Tipos de contrato (checklist comercial)</dt><dd>${esc(os.contratos.join(', ') || '—')}</dd>
     </dl>
     ${sug ? '' : '<div class="os-warn">Não encontrei um produto cadastrado parecido com o da OS. Escolha um na lista para criar as atividades padrão, ou crie depois.</div>'}
-    ${dup ? `<div class="os-warn">Já existe uma implantação chamada "${esc(dup.cliente)}". Se continuar, será criada outra.</div>` : ''}`;
+    ${dup ? `<div class="os-warn">Já existe um cadastro chamado "${esc(dup.cliente)}". Se continuar, será criada outra.</div>` : ''}`;
   $('#osModal').hidden = false; $('#osNome').focus();
   osFimManual = false; osSyncProduto(); osCalcFim();
 });
@@ -2090,7 +2122,7 @@ $('#osCreate').addEventListener('click', async () => {
   const dados = { cliente: head, atividades, checklist: { itens:{}, diasRemPrev: num('#osDiasRem'), diasPresPrev: num('#osDiasPres') }, entrega: osToEntrega(osPending.os, head) };
   $('#osCreate').disabled = true; $('#osErr').textContent = '';
   try {
-    const ins = await sb.from('implantacoes').insert({ cliente: nome, dados }).select('id').single();
+    const ins = await sb.from('implantacoes').insert({ cliente: nome, tipo: cfgTipo().tipo, dados }).select('id').single();
     if (ins.error) throw ins.error;
     const id = ins.data.id, ext = (osPending.file.name.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0];
     const up = await sb.storage.from('arquivos').upload(`${id}/os${ext}`, osPending.file, { upsert:true });
@@ -2139,12 +2171,13 @@ $('#btnAllFiles').addEventListener('click', async () => {
   $('#busyModal').hidden = false;
   const step = t => $('#busyText').textContent = t;
   try {
+    const tcfg = TIPOS[KEY_DO_TIPO[currentImpl.tipo] || 'impl'];
     step('Arquivo da OS…');
-    try { const b = await osBlob(); if (b) zip.file(`02_OS_${slug}${(currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0]}`, b); else falhas.push('OS (nenhum arquivo anexado)'); } catch { falhas.push('OS'); }
+    if (tcfg.os) try { const b = await osBlob(); if (b) zip.file(`02_OS_${slug}${(currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0]}`, b); else falhas.push('OS (nenhum arquivo anexado)'); } catch { falhas.push('OS'); }
     step('Cronograma…');
     try { zip.file(`05_Cronograma_${slug}.xlsx`, await croXlsxBlob()); } catch { falhas.push('Cronograma'); }
     step('Entrega para suporte…');
-    try { implTab('ent'); await new Promise(r => setTimeout(r, 300)); syncEntrega(); zip.file(`08_Entrega_Suporte_${slug}.pdf`, entregaCanvasToPdf(await capture())); } catch(e){ console.error(e); falhas.push('Entrega para suporte'); }
+    if (tcfg.entrega) try { implTab('ent'); await new Promise(r => setTimeout(r, 300)); syncEntrega(); zip.file(`08_Entrega_Suporte_${slug}.pdf`, entregaCanvasToPdf(await capture())); } catch(e){ console.error(e); falhas.push('Entrega para suporte'); }
     step('Status report…');
     try { const r0 = impls.find(x => x.id === currentImpl.id);
       zip.file(`09_Status_${slug}.pptx`, await stPptx({ id: currentImpl.id, cliente: readImplHeader().nome, dados: currentImpl.dados, updated_at: r0?.updated_at || new Date().toISOString() }, '', true)); } catch(e){ console.error(e); falhas.push('Status report'); }
@@ -2231,7 +2264,7 @@ function renderChecklist(err){
   let n = 0;
   box.innerHTML = `
   <div class="det-card">
-    <div class="chk-head"><div><h3>Checklist de implantação (Scorecard – Analistas de implantação)</h3>
+    <div class="chk-head"><div><h3>Checklist de ${esc((currentImpl?.tipo || 'Implantação').toLowerCase())} (Scorecard – Analistas de implantação)</h3>
       <p>Para todas as implantações é obrigatório este checklist, que deve ser apresentado pelo analista na reunião do primeiro dia após o encerramento da implantação.</p></div>
       <div style="min-width:220px"><span style="font-size:12px;color:var(--muted)">Progresso do checklist</span>${pbar(prog)}</div></div>
     <div class="chk-info">
@@ -2691,11 +2724,11 @@ $('#btnAddChkItem').addEventListener('click', () => {
 function fileSlug(t){ return (t || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,''); }
 
 $('#imChamado').addEventListener('input', () => { currentImpl.dados.chamado = $('#imChamado').value.trim(); implChanged(); });
-$('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || 'Nova implantação'; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist(); if (!$('#tabCro').hidden) renderCronograma();
+$('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || cfgTipo().nova; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist(); if (!$('#tabCro').hidden) renderCronograma();
   { const sm = SIST_MAP[$('#imProduto').value]; const boxes = [...form.querySelectorAll('input[name=sistemas]')]; if (sm && !boxes.some(b => b.checked)){ const b = boxes.find(x => x.value === sm); if (b) b.checked = true; } }
   applyEntregaLocks(); refresh(); syncEntrega(); implChanged(); });
 $('#btnNewImpl').addEventListener('click', () => openImpl(null));
-$('#btnImplBack').addEventListener('click', () => go('impl'));
+$('#btnImplBack').addEventListener('click', () => go(modoTipo));
 
 let implSaving = false;
 async function saveImpl(silent){
@@ -2705,7 +2738,7 @@ async function saveImpl(silent){
   if (!head.nome){ $('#implMsg').textContent = 'Informe o nome do cliente antes de salvar.'; if (!silent) $('#imNome').focus(); return false; }
   currentImpl.dados.cliente = head; syncEntrega();
   implSaving = true; $('#btnImplSave').disabled = true; $('#implMsg').textContent = '';
-  const payload = { cliente: head.nome, dados: currentImpl.dados };
+  const payload = { cliente: head.nome, tipo: currentImpl.tipo || 'Implantação', dados: currentImpl.dados };
   const res = currentImpl.id
     ? await sb.from('implantacoes').update(payload).eq('id', currentImpl.id).select('id').single()
     : await sb.from('implantacoes').insert(payload).select('id').single();
@@ -2718,15 +2751,16 @@ async function saveImpl(silent){
 $('#btnImplSave').addEventListener('click', () => saveImpl(false));
 $('#btnImplDelete').addEventListener('click', async () => {
   if (!currentImpl?.id) return;
-  const v = await ask('Excluir implantação?', `A implantação de ${$('#imNome').value || 'este cliente'} e todas as atividades dela serão apagadas definitivamente.`, [['Cancelar','b-ghost',null],['Excluir definitivamente','b-danger','del']]);
+  const v = await ask('Excluir?', `${currentImpl?.tipo || 'Implantação'} de ${$('#imNome').value || 'este cliente'} e todas as atividades dela serão apagadas definitivamente.`, [['Cancelar','b-ghost',null],['Excluir definitivamente','b-danger','del']]);
   if (v !== 'del') return;
   const { data, error } = await sb.from('implantacoes').delete().eq('id', currentImpl.id).select('id');
   if (!error && data?.length && currentImpl.dados.os?.path) await sb.storage.from('arquivos').remove([currentImpl.dados.os.path]);
   if (error || !data?.length){ $('#implMsg').textContent = 'Não foi possível excluir' + (error ? ': ' + error.message : ': sem permissão.'); return; }
-  markClean(); currentImpl = null; flash('Implantação excluída.'); show('impl'); loadImpl();
+  markClean(); currentImpl = null; flash('Excluído.'); show('impl'); loadImpl();
 });
 
 /* ---------- status report ---------- */
+const TITULO_REL = { 'Implantação':'Projeto', 'UpSell':'UpSell', 'Atividade':'Atividade' };
 const ST_CLS = {'Não iniciado':'s-nao','Em andamento':'s-and','Concluído':'s-con','Atrasado':'s-red','Paralisado':'s-red','Cancelado':'s-red'};
 function statusData(r){
   const d = r.dados || {}, c = d.cliente || {}, e = d.entrega || {}, st = d.status || {};
@@ -2748,6 +2782,7 @@ function statusData(r){
   const aten = atv.filter(a => a.status === 'Atenção').map(a => a.nome + (a.obs ? ': ' + a.obs : ''));
   if ((st.atencao||'').trim()) aten.push(st.atencao.trim());
   return {
+    tipo: tipoDe(r), tipoAtividade: c.tipoAtividade || '',
     nome: r.cliente || c.nome || 'Sem nome', coord: c.coordenador || '', analista: c.cittati || '', inicio: c.inicio || '', fim: c.fim || '',
     atualizado: r.updated_at, status, servico: (c.produtos||[]).join(' + ') || c.produto || '', equip: (e.hardware||[]).join(', '),
     veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', aten, atrasadas, prox: atv.filter(a => !feita(a) && !a.foraPrazo), pendCli: atv.filter(a => !feita(a) && a.foraPrazo), fin: concl,
@@ -2759,22 +2794,35 @@ const dBR = v => { if (!v) return '—'; const t = String(v); return t.length <=
 function stShowList(){ $('#stListWrap').hidden = false; $('#stDetail').hidden = true; stCurrent = null; }
 function renderStCards(){
   const q = $('#stSearch').value.trim().toLowerCase(), f = $('#stFilter').value;
-  const rows = impls.map(r => ({ r, d: statusData(r) }))
+  const conta = t => impls.filter(r => !t || tipoDe(r) === t).length;
+  document.querySelectorAll('#stTipos button').forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.stTipo === stTipo);
+    b.innerHTML = `${esc(b.textContent.replace(/\s*\d+$/, ''))} <b>${conta(b.dataset.stTipo)}</b>`;
+  });
+  const rows = impls.filter(r => !stTipo || tipoDe(r) === stTipo).map(r => ({ r, d: statusData(r) }))
     .filter(({d}) => (!f || d.status === f) && (!q || d.nome.toLowerCase().includes(q) || d.analista.toLowerCase().includes(q)));
+  const rotulo = { '':'item', 'Implantação':'implantação', 'UpSell':'UpSell', 'Atividade':'atividade' }[stTipo];
   $('#stCards').innerHTML = rows.length ? rows.map(({r,d}) => `<div class="st-card ${ST_CLS[d.status]}" data-id="${r.id}">
+    <span class="st-tag">${esc(d.tipo)}${d.tipoAtividade ? ' · ' + esc(d.tipoAtividade) : ''}</span>
     <h3>${esc(d.nome)}<span class="st-pill ${ST_CLS[d.status]}">${d.status.toUpperCase()}</span></h3>
     <div class="st-meta">
       <div><span>Analista</span>${esc(d.analista||'—')}</div><div><span>Coordenador</span>${esc(d.coord||'—')}</div>
       <div><span>Início</span>${dBR(d.inicio)}</div><div><span>Fim</span>${dBR(d.fim)}</div>
-      <div><span>Serviço</span>${esc(d.servico||'—')}</div><div><span>Última atualização</span>${dBR(d.atualizado)}</div>
+      <div><span>${d.tipo === 'Atividade' ? 'Tipo' : 'Serviço'}</span>${esc((d.tipo === 'Atividade' ? d.tipoAtividade : d.servico)||'—')}</div><div><span>Última atualização</span>${dBR(d.atualizado)}</div>
     </div>
     ${pbar(d.prog)}
     ${d.atrasadas && d.status !== 'Concluído' ? `<div class="st-alert">⚠ ${d.atrasadas} atividade(s) com término vencido</div>` : ''}
     <div class="st-nums"><div><b>${d.fin.length}</b> finalizadas</div><div><b>${d.prox.length}</b> próximas</div>${d.pendCli.length ? `<div><b>${d.pendCli.length}</b> pend. cliente</div>` : ''}<div class="${d.aten.length?'warn':''}"><b>${d.aten.length}</b> atenção</div></div>
     <div class="st-actions"><button type="button" class="open" data-sta="open">Abrir</button>
       <button type="button" data-sta="png">Imagem</button><button type="button" data-sta="pdf">PDF</button><button type="button" data-sta="pptx">PowerPoint</button></div>
-  </div>`).join('') : `<div class="empty">${impls.length ? 'Nenhuma implantação encontrada para esse filtro.' : 'Nenhuma implantação cadastrada ainda.'}</div>`;
+  </div>`).join('') : `<div class="empty">${conta(stTipo) ? `Nenhum(a) ${rotulo} encontrado(a) para esse filtro.` : `Nenhum(a) ${rotulo} cadastrado(a) ainda.`}</div>`;
 }
+let stTipo = (() => { try { return localStorage.getItem('stTipo') || ''; } catch { return ''; } })();
+$('#stTipos').addEventListener('click', e => {
+  const b = e.target.closest('[data-st-tipo]'); if (!b) return;
+  stTipo = b.dataset.stTipo; try { localStorage.setItem('stTipo', stTipo); } catch {}
+  renderStCards();
+});
 $('#stSearch').addEventListener('input', renderStCards);
 $('#stFilter').addEventListener('change', renderStCards);
 $('#stCards').addEventListener('click', e => {
@@ -2788,7 +2836,7 @@ function reportHTML(r){
   const tbl = (list, vazio) => `<table class="sr-t"><tr><th style="width:44%">NOME</th><th style="width:28%">RESPONSÁVEL</th><th>Término</th></tr>
     ${list.length ? list.map(a => `<tr><td>${esc(a.nome)}</td><td>${esc(a.resp||'')}</td><td>${a.fim ? fmtDate(a.fim) : ''}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">${vazio}</td></tr>`}</table>`;
   return `<div class="sr">
-    <div class="sr-top"><img src="${LOGO}" alt="Cittati"><div class="sr-title">Projeto – <em>${esc(d.nome)}</em></div></div>
+    <div class="sr-top"><img src="${LOGO}" alt="Cittati"><div class="sr-title">${TITULO_REL[d.tipo] || 'Projeto'} – <em>${esc(d.nome)}</em></div></div>
     <div class="sr-meta"><div>
       <p>Última Atualização: <em>${dBR(d.atualizado)}</em></p>
       <p>Coordenador do Projeto: <em>${esc(d.coord||'—')}</em></p>
@@ -2862,7 +2910,7 @@ async function stPptx(r, base, asBlob){
   pres.defineLayout({ name:'STATUS', width:13.333, height:12.245 }); pres.layout = 'STATUS';
   const sl = pres.addSlide(), F = 'Arial', RED = 'E00000', GRAY = 'A6A6A6', LIGHT = 'E7E6E6';
   sl.addImage({ data: LOGO, x:0.45, y:0.12, w:1.9, h:0.92 });
-  sl.addText([{ text:'Projeto – ', options:{ color:'000000' } }, { text:d.nome, options:{ color:RED } }],
+  sl.addText([{ text:(TITULO_REL[d.tipo] || 'Projeto') + ' – ', options:{ color:'000000' } }, { text:d.nome, options:{ color:RED } }],
     { x:3.15, y:0.12, w:9.75, h:0.62, fontFace:F, fontSize:20, bold:true, align:'center', valign:'middle', line:{ color:'222222', width:1 }, isTextBox:true });
   sl.addShape(pres.shapes.LINE, { x:0.05, y:1.12, w:13.2, h:0, line:{ color:'BFBFBF', width:3 } });
   const meta = [['Última Atualização: ', dBR(d.atualizado)], ['Coordenador do Projeto: ', d.coord||'—'], ['Analista do projeto: ', d.analista||'—'], ['Início Projeto: ', dBR(d.inicio)], ['Fim Projeto: ', dBR(d.fim)]];
@@ -2895,7 +2943,7 @@ async function stPptx(r, base, asBlob){
   if (d.pendCli.length){
     const s2 = pres.addSlide();
     s2.addImage({ data: LOGO, x:0.45, y:0.12, w:1.9, h:0.92 });
-    s2.addText([{ text:'Projeto – ', options:{ color:'000000' } }, { text:d.nome, options:{ color:RED } }],
+    s2.addText([{ text:(TITULO_REL[d.tipo] || 'Projeto') + ' – ', options:{ color:'000000' } }, { text:d.nome, options:{ color:RED } }],
       { x:3.15, y:0.12, w:9.75, h:0.62, fontFace:F, fontSize:20, bold:true, align:'center', valign:'middle', line:{ color:'222222', width:1 }, isTextBox:true });
     s2.addText('PENDÊNCIAS DO CLIENTE', { x:0.05, y:1.3, w:13.2, h:0.5, fill:{ color:GRAY }, color:'FFFFFF', fontFace:F, fontSize:20, bold:true, align:'center', valign:'middle', isTextBox:true, margin:0 });
     s2.addText('Atividades de responsabilidade do cliente, fora do prazo do contrato de implantação.', { x:0.05, y:1.85, w:13.2, h:0.35, fontFace:F, fontSize:11, color:'666666', isTextBox:true });
@@ -2949,7 +2997,7 @@ function openCliente(id){
   const c = cliCur || { base:'SP', valor_km:1.35, pedagio:0 };
   Object.entries(CLI_F).forEach(([el, f]) => $('#' + el).value = c[f] ?? '');
   $('#cliTitle').textContent = cliCur ? cliCur.nome : 'Novo cliente';
-  $('#cliDel').hidden = !(cliCur && isAdmin); $('#cliAt').hidden = !cliCur; $('#cliErr').textContent = '';
+  $('#cliDel').hidden = !(cliCur && isAdmin); $('#cliErr').textContent = '';
   cliCalc(); $('#cliModal').hidden = false; $('#clNome').focus();
 }
 function readCliForm(){ const o = {}; Object.entries(CLI_F).forEach(([el, f]) => { const v = $('#' + el).value.trim(); o[f] = CLI_NUM.includes(f) ? (v === '' ? null : Number(v)) : v; }); o.uf = (o.uf || '').toUpperCase(); return o; }
@@ -3223,7 +3271,7 @@ if (sb){
     if (session?.user){
       $('#userEmail').textContent = session.user.email;
       myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadProdutos(); loadCatalog(); loadFeriados();
-      if (document.body.dataset.screen === 'login'){ show('impl'); loadImpl(); }
+      if (document.body.dataset.screen === 'login'){ modoTipo = 'impl'; aplicarModoTipo(); show('impl'); loadImpl(); loadClientes().catch(() => {}); loadTipos().catch(() => {}); }
     } else {
       currentId = null; records = []; isAdmin = false; myId = null; document.body.classList.remove('is-admin'); closeForm(); updateDeleteBtn(); fillState({}); markClean(); refresh(); impls = []; currentImpl = null;
       $('#lgPass').value = ''; show('login');
