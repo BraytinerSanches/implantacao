@@ -556,7 +556,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <label class="f">Produto contratado<select id="imProdutos"><option value="">Selecione</option></select></label>
     </div>
     <div class="row">
-      <label class="f">Coordenador<input type="text" id="imCoord"></label>
+      <label class="f">Coordenador<select id="imCoord"><option value="">Selecione</option></select></label>
       <label class="f">Produto implantado<select id="imProduto"></select></label>
       <label class="f">Data de início<input type="date" id="imInicio"></label>
       <label class="f">Data de fim <small id="imFimInfo" style="color:var(--blue)"></small><input type="date" id="imFim"></label>
@@ -844,6 +844,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <button type="button" data-ct="users" class="active">Usuários</button>
     <button type="button" data-ct="cli">Clientes</button>
     <button type="button" data-ct="ana">Analistas</button>
+    <button type="button" data-ct="coord">Coordenadores</button>
     <button type="button" data-ct="cat">Catálogo de atividades</button>
     <button type="button" data-ct="chk">Checklist</button>
     <button type="button" data-ct="prod">Produtos</button>
@@ -873,6 +874,17 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
         <input type="text" id="anaNew" placeholder="Nome do analista" aria-label="Nome do novo analista">
         <button type="button" class="b-main" id="btnAddAna">Adicionar</button>
+      </div>
+    </div>
+  </div>
+  <div id="cfgCoord" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Coordenadores</h3>
+      <p class="cfgp">Nomes que aparecem para seleção no campo Coordenador de Implantações, UpSell e Atividades. Remover um nome não altera os registros que já usam esse coordenador.</p>
+      <div id="coordList"></div>
+      <div class="cadrow" style="grid-template-columns:1fr auto;border:0">
+        <input type="text" id="coordNew" placeholder="Nome do coordenador" aria-label="Nome do novo coordenador">
+        <button type="button" class="b-main" id="btnAddCoord">Adicionar</button>
       </div>
     </div>
   </div>
@@ -1534,7 +1546,7 @@ function openImpl(id){
   $('#imNome').value = c.nome || r?.cliente || ''; setImplAnalista(c.cittati || '');
   $('#imCliente').value = c.cliente || ''; setImplProduto((c.produtos||[]).join(' + '));
   $('#imChamado').value = currentImpl.dados.chamado || '';
-  $('#imCoord').value = c.coordenador || ''; $('#imStatusManual').value = c.statusManual || ''; $('#imInicio').value = c.inicio || ''; $('#imInicio').dataset.prev = c.inicio || ''; $('#imFimInfo').textContent = ''; $('#imFim').value = c.fim || '';
+  setCoordSelect('#imCoord', c.coordenador || ''); $('#imStatusManual').value = c.statusManual || ''; $('#imInicio').value = c.inicio || ''; $('#imInicio').dataset.prev = c.inicio || ''; $('#imFimInfo').textContent = ''; $('#imFim').value = c.fim || '';
   $('#imProduto').innerHTML = '<option value="">Selecione</option>' + PRODUTOS.map(p => `<option>${p}</option>`).join('') + (c.produto && !PRODUTOS.includes(c.produto) ? `<option>${esc(c.produto)}</option>` : '');
   $('#imProduto').value = c.produto || '';
   currentImpl.dados.checklist ||= { itens:{} };
@@ -1655,9 +1667,10 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos'; $('#cfgCli').hidden = t !== 'cli';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCoord').hidden = t !== 'coord'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos'; $('#cfgCli').hidden = t !== 'cli';
   if (t === 'users'){ loadUsers(); loadStorage(); }
   else if (t === 'ana'){ loadAnalistas(); }
+  else if (t === 'coord'){ loadCoordenadores(); }
   else if (t === 'cat'){ loadCatalog(); }
   else if (t === 'chk'){ renderChkCfg(); Promise.resolve(loadCatalog()).catch(() => {}).then(() => loadChecklistTpl()); }
   else if (t === 'prod'){ loadCatalog().then(loadProdutos); }
@@ -1666,6 +1679,51 @@ function cfgTab(t){
   else if (t === 'cli'){ loadClientes().then(renderClientes); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
+
+/* ---------- coordenadores ---------- */
+let coordenadores = [];
+async function loadCoordenadores(){
+  const { data, error } = await sb.from('coordenadores').select('id,nome').order('nome');
+  if (error){ $('#coordList').innerHTML = `<div class="note">Lista de coordenadores indisponível: ${esc(error.message)}. Rode o arquivo supabase-coordenadores.sql no Supabase.</div>`; return; }
+  coordenadores = data || []; renderCoordList(); setCoordSelect('#imCoord', $('#imCoord').value);
+}
+// mantém o nome que já está gravado mesmo que não esteja mais na lista
+function setCoordSelect(sel, v){
+  const names = coordenadores.map(c => c.nome), s2 = $(sel);
+  s2.innerHTML = '<option value="">Selecione</option>' + names.map(n => `<option>${esc(n)}</option>`).join('')
+    + (v && !names.includes(v) ? `<option value="${esc(v)}">${esc(v)} (fora da lista)</option>` : '');
+  s2.value = v || '';
+}
+function renderCoordList(){
+  $('#coordList').innerHTML = coordenadores.length ? coordenadores.map(c => `<div class="catrow" data-cid="${c.id}">
+    <input type="text" value="${esc(c.nome)}" data-coord aria-label="Nome do coordenador">
+    <button type="button" class="b-del" data-coorddel aria-label="Remover coordenador" title="Remover coordenador">×</button></div>`).join('')
+    : '<div class="empty">Nenhum coordenador cadastrado ainda.</div>';
+}
+$('#coordList').addEventListener('change', async e => {
+  if (!e.target.matches('[data-coord]')) return;
+  const id = e.target.closest('[data-cid]').dataset.cid, nome = e.target.value.trim(); if (!nome) return;
+  const { error } = await sb.from('coordenadores').update({ nome }).eq('id', id);
+  if (error) flash('Erro: ' + error.message); else { const c = coordenadores.find(x => String(x.id) === id); if (c) c.nome = nome; setCoordSelect('#imCoord', $('#imCoord').value); flash('Coordenador atualizado.'); }
+});
+$('#coordList').addEventListener('click', async e => {
+  if (!e.target.closest('[data-coorddel]')) return;
+  const c = coordenadores.find(x => String(x.id) === e.target.closest('[data-cid]').dataset.cid);
+  const v = await ask('Remover coordenador?', `"${c.nome}" deixará de aparecer para seleção. Os registros que já usam esse nome não são alterados.`, [['Cancelar','b-ghost',null],['Remover','b-danger','ok']]);
+  if (!v) return;
+  const { error } = await sb.from('coordenadores').delete().eq('id', c.id);
+  if (error) flash('Erro: ' + error.message); else { coordenadores = coordenadores.filter(x => x !== c); renderCoordList(); setCoordSelect('#imCoord', $('#imCoord').value); }
+});
+async function addCoordenador(){
+  const nome = $('#coordNew').value.trim(); if (!nome) return;
+  if (coordenadores.some(c => c.nome.toLowerCase() === nome.toLowerCase())){ flash('Esse coordenador já está cadastrado.'); return; }
+  const { data, error } = await sb.from('coordenadores').insert({ nome }).select('id').single();
+  if (error){ flash('Erro: ' + error.message); return; }
+  coordenadores.push({ id:data.id, nome }); coordenadores.sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
+  $('#coordNew').value = ''; renderCoordList(); setCoordSelect('#imCoord', $('#imCoord').value); $('#coordNew').focus();
+}
+$('#btnAddCoord').addEventListener('click', addCoordenador);
+$('#coordNew').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); addCoordenador(); } });
 
 /* ---------- analistas ---------- */
 let analistas = [];
@@ -2061,6 +2119,7 @@ $('#osFileInput').addEventListener('change', async () => {
   let os; try { os = await parseOS(file); } catch(e){ await ask('Arquivo não reconhecido', e.message, [['Entendi','b-save',1]]); return; }
   if (!produtos.length) await loadProdutos();
   if (!analistas.length) await loadAnalistas();
+  if (!coordenadores.length) await loadCoordenadores();
   osPending = { file, os };
   $('#osTitle').textContent = `${cfgTipo().nova} pela OS`; $('#osCreate').textContent = 'Criar';
   const sug = suggestProduto(os), opt = (arr, v) => arr.map(x => `<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
@@ -2071,7 +2130,7 @@ $('#osFileInput').addEventListener('change', async () => {
       <label class="f">Cliente<input type="text" id="osNome" value="${esc(os.nome)}"></label>
       <label class="f">Responsável do cliente<input type="text" id="osResp" value="${esc(os.respTec)}"></label>
       <label class="f">Analista Cittati<select id="osAna"><option value="">Selecione</option>${opt(analistas.map(a => a.nome), '')}</select></label>
-      <label class="f">Coordenador<input type="text" id="osCoord"></label>
+      <label class="f">Coordenador<select id="osCoord"><option value="">Selecione</option>${coordenadores.map(c => `<option>${esc(c.nome)}</option>`).join('')}</select></label>
       <label class="f">Produto contratado (atividades padrão)<select id="osProd"><option value="">Nenhum (sem atividades padrão)</option>${opt(produtos.map(p => p.nome), sug)}</select></label>
       <label class="f">Produto implantado<select id="osProdImpl"><option value="">Selecione</option>${opt(PRODUTOS, os.produtos.some(x => /fretamento|ics/i.test(x)) ? 'ICS' : '')}</select></label>
       <label class="f">Data de início<input type="date" id="osIni"></label>
@@ -3270,7 +3329,7 @@ if (sb){
   sb.auth.onAuthStateChange((event, session) => {
     if (session?.user){
       $('#userEmail').textContent = session.user.email;
-      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadProdutos(); loadCatalog(); loadFeriados();
+      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadCoordenadores(); loadProdutos(); loadCatalog(); loadFeriados();
       if (document.body.dataset.screen === 'login'){ modoTipo = 'impl'; aplicarModoTipo(); show('impl'); loadImpl(); loadClientes().catch(() => {}); loadTipos().catch(() => {}); }
     } else {
       currentId = null; records = []; isAdmin = false; myId = null; document.body.classList.remove('is-admin'); closeForm(); updateDeleteBtn(); fillState({}); markClean(); refresh(); impls = []; currentImpl = null;
