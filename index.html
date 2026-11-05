@@ -914,6 +914,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
         <label class="chk"><input id="ce_verso" type="checkbox" checked> Incluir verso com os módulos apresentados</label>
         <div class="btns">
           <button type="button" class="b-main" id="ce_btnTodos">Baixar PDF (todos os participantes)</button>
+          <button type="button" class="b-main" id="ce_btnZip">Baixar ZIP (um PDF por participante)</button>
           <button type="button" class="b-save" id="ce_btnAtual">Baixar PDF só do participante exibido</button>
           <button type="button" class="sec" id="ce_btnPng">Baixar imagens PNG do exibido</button>
         </div>
@@ -3819,6 +3820,25 @@ $("btnPng").onclick = async ()=>{
   const n = nomes()[idx]; if(!n) return msg("Informe ao menos um participante.", true);
   const ok = await salvar(`Certificado_${slug(n)}_frente.png`, await pngBlob($("cv")));
   if (ok && $("verso").checked) await salvar(`Certificado_${slug(n)}_verso.png`, await pngBlob($("cv2")));
+};
+// um PDF por participante, todos dentro de um .zip
+$("btnZip").onclick = async ()=>{
+  const lista = nomes(); if(!lista.length) return msg("Informe ao menos um participante.", true);
+  const b = $("btnZip"); b.disabled = true;
+  try {
+    const zip = new JSZip(), usados = {};
+    lista.forEach((n, i) => {
+      msg(`Gerando ${i+1} de ${lista.length}…`);
+      let arq = `Certificado_${slug(n) || "participante"}`;
+      usados[arq] = (usados[arq] || 0) + 1;
+      if (usados[arq] > 1) arq += "_" + usados[arq];
+      zip.file(arq + ".pdf", gerarPdf([n]));
+    });
+    const blob = await zip.generateAsync({ type:"blob" });
+    await salvar(`Certificados_${slug($("treinamento").value)||"Flits"}.zip`, blob);
+    msg(`ZIP gerado com ${lista.length} certificado(s).`);
+  } catch(e){ msg("Não foi possível gerar o ZIP: " + e.message, true); }
+  finally { b.disabled = false; }
 };
 $("prev").onclick = ()=>{ idx--; render(); };
 $("next").onclick = ()=>{ idx++; render(); };
