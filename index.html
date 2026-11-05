@@ -96,10 +96,16 @@ body:not([data-screen="rdv"]) #rdvView{display:none}
 #rdvView .rdv-t td{padding:6px 8px;vertical-align:middle}
 #rdvView .rdv-t input{padding:5px 7px;font-size:14px;min-width:70px}
 #rdvView .rdv-t input[type=date]{min-width:130px}
+#rdvView .rdv-cc{display:block;font-size:11.5px;color:var(--muted)}
 #rdvView .rdv-t tr.rdv-off td{opacity:.45}
 #rdvView .rdv-t tr.rdv-off td:last-child{opacity:1}
 #rdvView .rdv-t tr.rdv-off b{text-decoration:line-through}
 #rdvView .sumrow{margin:4px 0 8px}
+#rdvView .rdv-f2{display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin-top:10px}
+#rdvView .rdv-f2 label.f{max-width:180px}
+#rdvView .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);padding-bottom:8px;cursor:pointer}
+#rdvView .chk input{width:16px;height:16px;accent-color:var(--orange)}
+#rdvView .rdv-vh .chk{padding:0;margin-top:6px}
 #rdvAviso{font-size:13px;color:#9A4A00;min-height:18px;margin-bottom:12px}
 /* ---------- barra superior ---------- */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--topbg);color:var(--topink);
@@ -972,8 +978,12 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
       <label class="f">Projeto<select id="rdvProj"><option value="">Todos os projetos</option></select></label>
       <label class="f">De<input type="date" id="rdvDe"></label>
       <label class="f">Até<input type="date" id="rdvAte"></label>
-      <label class="f">Deslocamento padrão<select id="rdvModo"><option value="diario">Ida e volta todo dia</option><option value="periodo">Ida no 1º dia e volta no último</option></select></label>
+      <label class="f">Deslocamento padrão<select id="rdvModo"><option value="diario">Ida e volta todo dia</option><option value="hosp">Hospedado direto (janta todos os dias, inclusive sáb. e dom.)</option><option value="semana">Hospedado na semana (volta no fim de semana)</option></select></label>
       <button type="button" class="b-ghost" id="rdvBuscar">Atualizar</button>
+    </div>
+    <div class="rdv-f2">
+      <label class="f">Valor da janta (R$)<input type="number" step="0.01" min="0" id="rdvJanta"></label>
+      <label class="chk"><input type="checkbox" id="rdvJantaCartao"> Janta paga no cartão corporativo</label>
     </div>
     <p class="cfgp" style="margin:10px 0 0">Busca as atividades com modalidade <b>Presencial</b> no cronograma de Implantações, UpSell e Atividades em que o colaborador é o Analista Cittati. O KM vem do cadastro de clientes (rota + 10%) e pode ser ajustado em cada linha.</p>
   </div>
@@ -3585,9 +3595,9 @@ document.fonts.ready.then(fitPreview);
 const RDV_ATV = r => { const t = tipoDe(r); return t === 'Atividade' ? (r.dados?.cliente?.tipoAtividade || 'Atividade') : t; };
 const rdvKm = v => { const n = Number(v) || 0; return n ? Math.ceil(n * 1.1) : ''; };   // rota + 10%, como no cadastro
 const rdvLS = { get(k, d){ try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-let rdv = { viagens: [], manuais: [], edits: {}, modos: {} }, rdvProjAlvo = '';
+let rdv = { viagens: [], manuais: [], edits: {}, modos: {}, semPed: {} }, rdvProjAlvo = '';
 const rdvDraftKey = () => `rdv:${$('#rdvColab').value}|${$('#rdvDe').value}|${$('#rdvAte').value}|${$('#rdvProj').value}`;
-function rdvSalvarRascunho(){ rdvLS.set(rdvDraftKey(), { manuais: rdv.manuais, edits: rdv.edits, modos: rdv.modos }); }
+function rdvSalvarRascunho(){ rdvLS.set(rdvDraftKey(), { manuais: rdv.manuais, edits: rdv.edits, modos: rdv.modos, semPed: rdv.semPed }); }
 
 function rdvInit(op = {}){
   const hoje = new Date(), cab = rdvLS.get('rdv:cab', {});
@@ -3600,7 +3610,9 @@ function rdvInit(op = {}){
   $('#rdvData').value = iso(hoje);
   $('#rdvProjeto').value = cab.projeto ?? '4010308 - OPERAÇÕES';
   $('#rdvCC').value = cab.cc ?? '1331';
-  $('#rdvModo').value = rdvLS.get('rdv:modo', 'diario');
+  { const m = rdvLS.get('rdv:modo', 'diario'); $('#rdvModo').value = m === 'periodo' ? 'hosp' : m; }
+  $('#rdvJanta').value = cab.janta ?? '45';
+  $('#rdvJantaCartao').checked = cab.jantaCartao ?? true;
   const atual = op.colab || $('#rdvColab').value || rdvLS.get('rdv:colab', '');
   $('#rdvColab').innerHTML = analistas.map(a => `<option>${esc(a.nome)}</option>`).join('');
   if (atual && !analistas.some(a => a.nome === atual)) $('#rdvColab').insertAdjacentHTML('beforeend', `<option>${esc(atual)}</option>`);
@@ -3618,7 +3630,7 @@ function rdvBuscar(){
   $('#rdvProj').innerHTML = '<option value="">Todos os projetos</option>' + doColab.map(r => `<option value="${esc(r.id)}">${esc(r.cliente || 'Sem nome')} · ${esc(RDV_ATV(r))}</option>`).join('');
   $('#rdvProj').value = doColab.some(r => String(r.id) === String(sel)) ? sel : '';
   const proj = $('#rdvProj').value;
-  const d = rdvLS.get(rdvDraftKey(), {}); rdv.manuais = d.manuais || []; rdv.edits = d.edits || {}; rdv.modos = d.modos || {};
+  const d = rdvLS.get(rdvDraftKey(), {}); rdv.manuais = d.manuais || []; rdv.edits = d.edits || {}; rdv.modos = d.modos || {}; rdv.semPed = d.semPed || {};
   rdv.viagens = [];
   doColab.filter(r => !proj || String(r.id) === proj).forEach(r => {
     const dias = new Set();
@@ -3628,11 +3640,12 @@ function rdvBuscar(){
     });
     const lista = [...dias].sort(); let grupo = [];
     const fecha = () => { if (grupo.length) rdv.viagens.push(rdvViagem(r, grupo)); grupo = []; };
-    // dias corridos seguidos formam uma viagem; fim de semana no meio separa as viagens
-    lista.forEach(v => { if (grupo.length && v !== iso(new Date(isoD(grupo[grupo.length - 1]).getTime() + 864e5))) fecha(); grupo.push(v); });
+    // dias úteis seguidos formam uma viagem (fim de semana ou feriado no meio não separa)
+    lista.forEach(v => { if (grupo.length && v !== iso(nextBD(new Date(isoD(grupo[grupo.length - 1]).getTime() + 864e5)))) fecha(); grupo.push(v); });
     fecha();
   });
   rdv.viagens.sort((a, b) => a.dias[0].localeCompare(b.dias[0]));
+  { const mem = rdvLS.get('rdv:semPedCli', {}); rdv.viagens.forEach(v => { if (rdv.semPed[v.key] === undefined && mem[norm(v.cliente)]) rdv.semPed[v.key] = true; }); }
   const nomes = [...new Set(rdv.viagens.map(v => v.cliente))];
   $('#rdvCli').value = nomes[0] || ''; $('#rdvEmp').value = nomes.slice(1).join(' / ');
   rdvRender();
@@ -3643,7 +3656,7 @@ function rdvViagem(r, dias){
 }
 // linhas geradas de uma viagem, já com as edições do usuário
 function rdvLinhasViagem(v){
-  const modo = rdv.modos[v.key] || $('#rdvModo').value, c = v.cad || {}, vkm = Number(c.valor_km) || 1.35;
+  const modo = rdvModoDe(v), c = v.cad || {}, vkm = Number(c.valor_km) || 1.35;
   const base = { empresa: v.cliente, chamado: v.chamado, atividade: v.atividade };
   const out = [];
   const trecho = (dia, sent) => {
@@ -3651,10 +3664,21 @@ function rdvLinhasViagem(v){
     out.push({ ...base, id: `${v.key}|${dia}|km${sent}`, data: dia, desc: `KM ${sent}`, qtd: rdvKm(km), unid: vkm, rdvFormula: 'mult', obs: sent.toLowerCase(), kind: 'km' });
     out.push({ ...base, id: `${v.key}|${dia}|ped${sent}`, data: dia, desc: `Pedágio ${sent}`, qtd: '', unid: '', rdvFormula: 'valor', obs: sent.toLowerCase(), kind: 'ped' });
   };
+  // janta em cada noite fora de casa: do 1º dia até a véspera da volta, em dias corridos
+  const vj = Number($('#rdvJanta').value) || 0, noCartao = $('#rdvJantaCartao').checked;
+  const jantas = (ini, fim) => { for (let x = isoD(ini); iso(x) < fim; x.setDate(x.getDate() + 1)){ const dia = iso(x);
+    out.push({ ...base, id: `${v.key}|${dia}|janta`, data: dia, desc: 'Janta', qtd: 1, unid: vj || '', rdvFormula: 'mult', obs: 'Janta', kind: 'janta' }); } };
   if (modo === 'diario') v.dias.forEach(d => { trecho(d, 'Ida'); trecho(d, 'Volta'); });
-  else { trecho(v.dias[0], 'Ida'); trecho(v.dias[v.dias.length - 1], 'Volta'); }
-  return out.map(l => ({ ...l, ...(rdv.edits[l.id] || {}) }));
+  else if (modo === 'semana'){   // um bloco por semana: ida no 1º dia útil, volta no último antes do fim de semana
+    const blocos = []; v.dias.forEach(d => { const b = blocos[blocos.length - 1]; if (b && isoD(d) - isoD(b[b.length - 1]) === 864e5) b.push(d); else blocos.push([d]); });
+    blocos.forEach(b => { trecho(b[0], 'Ida'); jantas(b[0], b[b.length - 1]); trecho(b[b.length - 1], 'Volta'); });
+  } else { trecho(v.dias[0], 'Ida'); jantas(v.dias[0], v.dias[v.dias.length - 1]); trecho(v.dias[v.dias.length - 1], 'Volta'); }
+  return out.filter(l => !(l.kind === 'ped' && rdv.semPed[v.key])).map(l => {
+    const r = { ...l, ...(rdv.edits[l.id] || {}) };
+    if (r.kind === 'janta') r.cartao = noCartao ? rdvValor(r) : '';
+    return r; }).sort((a, b) => a.data.localeCompare(b.data) || (a.kind === 'janta') - (b.kind === 'janta'));
 }
+const rdvModoDe = v => { const m = rdv.modos[v.key] || $('#rdvModo').value; return m === 'periodo' ? 'hosp' : m; };
 const rdvValor = l => l.rdvFormula === 'valor' ? (Number(l.unid) || 0) : (Number(l.qtd) || 0) * (Number(l.unid) || 0);
 // o que vai para o Excel: pedágio sem valor fica de fora
 function rdvTodasLinhas(){
@@ -3668,16 +3692,17 @@ function rdvRender(){
     <td>${fmtDate(l.data)}</td><td><b>${esc(l.desc)}</b></td>
     <td><input type="number" step="1" min="0" data-e="qtd" value="${esc(num(l.qtd))}" aria-label="${l.kind === 'ped' ? 'Praças' : 'Quilômetros'}" placeholder="${l.kind === 'ped' ? 'praças' : 'km'}"></td>
     <td><input type="number" step="0.01" min="0" data-e="unid" value="${esc(num(l.unid))}" aria-label="${l.kind === 'ped' ? 'Valor do pedágio' : 'Valor por km'}" placeholder="${l.kind === 'ped' ? 'R$ total' : 'R$/km'}"></td>
-    <td class="num">${brl(rdvValor(l))}</td>
+    <td class="num">${brl(rdvValor(l))}${Number(l.cartao) ? '<small class="rdv-cc">no cartão</small>' : ''}</td>
     <td><input type="text" data-e="obs" value="${esc(l.obs || '')}" aria-label="Observação"></td>
     <td><button type="button" class="b-del" data-rm aria-label="${l.removido ? 'Incluir de volta' : 'Remover linha'}" title="${l.removido ? 'Incluir de volta' : 'Remover linha'}">${l.removido ? '↺' : '×'}</button></td></tr>`;
   $('#rdvViagens').innerHTML = V.length ? V.map(v => {
-    const modo = rdv.modos[v.key] || $('#rdvModo').value, per = v.dias.length > 1 ? `${fmtDate(v.dias[0])} a ${fmtDate(v.dias[v.dias.length - 1])}` : fmtDate(v.dias[0]);
+    const modo = rdvModoDe(v), per = v.dias.length > 1 ? `${fmtDate(v.dias[0])} a ${fmtDate(v.dias[v.dias.length - 1])}` : fmtDate(v.dias[0]);
     return `<div class="det-card rdv-v" data-v="${esc(v.key)}">
       <div class="rdv-vh"><div><h3 class="cfgh" style="margin:0">${esc(v.cliente)}</h3>
         <small>${per} · ${v.dias.length} dia(s) presencial(is) · ${esc(v.atividade)}${v.chamado ? ' · Chamado ' + esc(v.chamado) : ''}</small>
         ${v.cad ? '' : '<div class="warn" style="font-size:13px">Cliente sem cadastro de KM em Configurações → Clientes. Preencha o KM nas linhas.</div>'}</div>
-        <label class="f">Deslocamento<select data-modo><option value="diario"${modo === 'diario' ? ' selected' : ''}>Ida e volta todo dia</option><option value="periodo"${modo === 'periodo' ? ' selected' : ''}>Ida no 1º dia e volta no último</option></select></label></div>
+        <div><label class="f">Deslocamento<select data-modo>${[['diario','Ida e volta todo dia'],['hosp','Hospedado direto (janta todos os dias, inclusive sáb. e dom.)'],['semana','Hospedado na semana (volta no fim de semana)']].map(([k, t]) => `<option value="${k}"${modo === k ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label class="chk"><input type="checkbox" data-semped${rdv.semPed[v.key] ? ' checked' : ''}> Sem pedágio</label></div></div>
       <div class="ls-wrap"><table class="ls-table rdv-t"><thead><tr><th>Data</th><th>Descrição</th><th>Quant.</th><th>Unidade (R$)</th><th class="num">RDV</th><th>Obs.</th><th></th></tr></thead>
       <tbody>${rdvLinhasViagem(v).map(linha).join('')}</tbody></table></div></div>`; }).join('')
     : '<div class="empty">Nenhuma atividade presencial deste colaborador no período. Confira se as atividades do cronograma estão com modalidade "Presencial" e datas preenchidas.</div>';
@@ -3706,14 +3731,20 @@ $('#rdvBuscar').addEventListener('click', rdvBuscar);
 $('#rdvColab').addEventListener('change', () => { $('#rdvProj').value = ''; rdvBuscar(); });
 ['#rdvProj', '#rdvDe', '#rdvAte'].forEach(id => $(id).addEventListener('change', rdvBuscar));
 $('#rdvModo').addEventListener('change', () => { rdvLS.set('rdv:modo', $('#rdvModo').value); rdv.modos = {}; rdvSalvarRascunho(); rdvRender(); });
-['#rdvProjeto', '#rdvCC'].forEach(id => $(id).addEventListener('change', () => rdvLS.set('rdv:cab', { projeto: $('#rdvProjeto').value, cc: $('#rdvCC').value })));
+const rdvSalvaCab = () => rdvLS.set('rdv:cab', { projeto: $('#rdvProjeto').value, cc: $('#rdvCC').value, janta: $('#rdvJanta').value, jantaCartao: $('#rdvJantaCartao').checked });
+['#rdvProjeto', '#rdvCC'].forEach(id => $(id).addEventListener('change', rdvSalvaCab));
+['#rdvJanta', '#rdvJantaCartao'].forEach(id => $(id).addEventListener('change', () => { rdvSalvaCab(); rdvRender(); }));
 $('#rdvViagens').addEventListener('change', e => {
   const vk = e.target.closest('[data-v]')?.dataset.v;
   if (e.target.matches('[data-modo]')){ rdv.modos[vk] = e.target.value; rdvSalvarRascunho(); rdvRender(); return; }
+  if (e.target.matches('[data-semped]')){
+    const v = rdv.viagens.find(x => x.key === vk), mem = rdvLS.get('rdv:semPedCli', {});
+    rdv.viagens.filter(x => norm(x.cliente) === norm(v.cliente)).forEach(x => rdv.semPed[x.key] = e.target.checked); mem[norm(v.cliente)] = e.target.checked; rdvLS.set('rdv:semPedCli', mem);
+    rdvSalvarRascunho(); rdvRender(); return; }
   const tr = e.target.closest('tr[data-id]'); if (!tr || !e.target.dataset.e) return;
   const id = tr.dataset.id; rdv.edits[id] = { ...(rdv.edits[id] || {}), [e.target.dataset.e]: e.target.value };
   rdvSalvarRascunho(); const v = rdv.viagens.find(x => x.key === vk), l = rdvLinhasViagem(v).find(x => x.id === id);
-  tr.querySelector('.num').textContent = brl(rdvValor(l)); rdvTotais();
+  tr.querySelector('.num').innerHTML = brl(rdvValor(l)) + (Number(l.cartao) ? '<small class="rdv-cc">no cartão</small>' : ''); rdvTotais();
 });
 $('#rdvViagens').addEventListener('click', e => {
   if (!e.target.closest('[data-rm]')) return;
