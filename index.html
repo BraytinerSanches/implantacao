@@ -128,6 +128,26 @@ body:not([data-screen="ics"]) #icsView{display:none}
 #icsView tr.ics-off a.ics-open{background:var(--muted)}
 #icsView .ics-act{display:flex;gap:6px;justify-content:flex-end;align-items:center}
 #icsView .ics-url{font-size:12px;color:var(--muted);word-break:break-all}
+/* ---------- perfis de acesso ---------- */
+body:not([data-screen="semacesso"]) #semAcessoView{display:none}
+body[data-screen="semacesso"] .tabs, body[data-screen="semacesso"] #wrap, body[data-screen="semacesso"] .ed-only, body[data-screen="semacesso"] #listView{display:none!important}
+#semAcessoView{max-width:640px;margin:60px auto;padding:0 20px;text-align:center}
+#semAcessoView .det-card{padding:32px}
+.ro-tag{display:none;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#5B4A00;background:#FFF4CC;border:1px solid #E8D27A;border-radius:999px;padding:4px 11px;white-space:nowrap}
+body.impl-ro #implDetView .ro-tag{display:inline-flex}
+body.impl-ro #implDetView :is(#btnImplSave,#btnImplDelete,#btnOsUp,#btnAddAtv,#btnRecalc,#btnAddCt,#btnAddCad,.b-del,.b-add,.ordb){display:none!important}
+body.impl-ro #implDetView :is(input,select,textarea):disabled{opacity:1;color:var(--ink);background:var(--panel);cursor:default}
+body.impl-ro.dirty #implDetView .ro-tag{display:inline-flex}
+body.impl-lista-ro #implView :is(#btnNewImpl,#btnOsImpl){display:none!important}
+.perf-card{margin-bottom:14px}
+.perf-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.perf-h input{font-weight:700;font-size:16px;color:var(--navy);max-width:340px}
+.perf-h small{color:var(--muted);font-size:13px;margin-right:auto}
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.perf-grid label.f select.n-nenhum{color:var(--muted)}
+.perf-grid label.f select.n-ver{color:#1F4E79;font-weight:600}
+.perf-grid label.f select.n-editar{color:#1F6B47;font-weight:700}
+#usersBody select.u-perfil{min-width:200px;padding:5px 8px;font-size:14px}
 /* ---------- barra superior ---------- */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--topbg);color:var(--topink);
   display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:4px solid var(--orange);flex-wrap:wrap;box-shadow:0 1px 0 var(--line)}
@@ -631,6 +651,7 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
   <div class="det-bar">
     <h2 id="implTitle">Nova implantação</h2>
     <span class="pending" role="status">Alterações não salvas</span>
+    <span class="ro-tag" id="implRoTag" title="Seu perfil permite apenas visualizar este cadastro">🔒 Somente leitura</span>
     <button class="b-alt" id="btnImplBack" style="color:var(--ink)">Voltar à lista</button>
     <span class="autosave" id="implAuto"></span>
     <button class="b-alt" id="btnImplCsv" style="color:var(--ink)">Exportar CSV</button>
@@ -1060,10 +1081,17 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     </div>
   </div>
 </div>
+<section id="semAcessoView">
+  <div class="det-card">
+    <h2 style="margin:0 0 8px">Acesso ainda não liberado</h2>
+    <p class="cfgp" style="margin:0">Seu usuário está ativo, mas ainda não tem um perfil de acesso com abas liberadas. Peça ao administrador do portal para definir o seu perfil em Configurações → Usuários.</p>
+  </div>
+</section>
 <section id="configView">
   <div class="ls-bar"><h2>Configurações</h2></div>
   <div class="ctabs" role="tablist">
     <button type="button" data-ct="users" class="active">Usuários</button>
+    <button type="button" data-ct="perfis">Perfis de acesso</button>
     <button type="button" data-ct="cli">Clientes</button>
     <button type="button" data-ct="ana">Analistas</button>
     <button type="button" data-ct="coord">Coordenadores</button>
@@ -1087,6 +1115,17 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     <div class="msg-err" id="nuMsg" role="status"></div>
   </form>
   <div id="usersBody"></div>
+  </div>
+  <div id="cfgPerfis" hidden>
+    <div class="det-card">
+      <h3 class="cfgh">Perfis de acesso</h3>
+      <p class="cfgp">Defina o que cada perfil enxerga: <b>Sem acesso</b> (a aba some do menu), <b>Visualizar</b> (abre, filtra e exporta, mas não altera) ou <b>Editar</b>. Em Implantações, UpSell e Atividades quem edita altera só os cadastros que criou; o administrador altera tudo e sempre tem acesso total. O perfil de cada pessoa é escolhido em Usuários.</p>
+      <div class="cadrow" style="grid-template-columns:1fr auto;border:0;padding:0">
+        <input type="text" id="perfNovo" placeholder="Nome do novo perfil (ex.: Suporte)" aria-label="Nome do novo perfil">
+        <button type="button" class="b-main" id="btnAddPerfil">Criar perfil</button>
+      </div>
+    </div>
+    <div id="perfList"></div>
   </div>
   <div id="cfgAna" hidden>
     <div class="det-card">
@@ -1439,7 +1478,7 @@ form.addEventListener('change', refresh);
 
 /* ---------- alterações não salvas ---------- */
 let dirty = false;
-function markDirty(){ dirty = true; document.body.classList.add('dirty'); if (document.body.dataset.screen === 'implDet' && typeof entLoaded !== 'undefined' && entLoaded && !$('#tabEnt').hidden){ syncEntrega(); if (typeof scheduleImplSave === 'function') scheduleImplSave(); } }
+function markDirty(){ if (typeof implRO !== 'undefined' && implRO && document.body.dataset.screen === 'implDet') return; dirty = true; document.body.classList.add('dirty'); if (document.body.dataset.screen === 'implDet' && typeof entLoaded !== 'undefined' && entLoaded && !$('#tabEnt').hidden){ syncEntrega(); if (typeof scheduleImplSave === 'function') scheduleImplSave(); } }
 function markClean(){ dirty = false; document.body.classList.remove('dirty'); }
 window.addEventListener('beforeunload', e => { if (!dirty) return; e.preventDefault(); e.returnValue = ''; return ''; });
 
@@ -1497,9 +1536,24 @@ async function checkAdmin(uid){
   isAdmin = !!data; updateDeleteBtn(); document.body.classList.toggle('is-admin', isAdmin); $('#btnImplDelete').hidden = !(isAdmin && currentImpl?.id);
 }
 
+/* ---------- perfis de acesso (Sem acesso / Visualizar / Editar por aba) ---------- */
+const ABAS = [['impl','Implantações'],['upsell','UpSell'],['ativ','Atividades'],['status','Status Report'],['ics','Clientes ICS'],['cert','Certificados']];
+const NIVEIS = [['nenhum','Sem acesso'],['ver','Visualizar'],['editar','Editar']];
+let acesso = {};
+const nivel = a => isAdmin ? 'editar' : (acesso[a] || 'nenhum');
+const podeVer = a => nivel(a) !== 'nenhum';
+const podeEditar = a => nivel(a) === 'editar';
+async function carregarAcesso(uid){
+  await checkAdmin(uid);
+  acesso = {};
+  if (!isAdmin){ const { data, error } = await sb.rpc('minhas_abas'); if (!error && data && typeof data === 'object') acesso = data; }
+  document.querySelectorAll('.mainnav button[data-go]').forEach(b => { if (b.dataset.go !== 'rdv') b.hidden = !podeVer(b.dataset.go); });
+}
+const primeiraAba = () => ABAS.map(a => a[0]).find(podeVer);
+
 function show(screen){
   document.body.dataset.screen = screen;
-  $('#subtitle').textContent = {impl: cfgTipo().sub, implDet: cfgTipo().sub, list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status de implantações, UpSell e atividades', cert:'Certificados de treinamento', ics:'Acesso rápido aos clientes ICS', rdv:'Deslocamentos das atividades presenciais', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
+  $('#subtitle').textContent = {impl: cfgTipo().sub, implDet: cfgTipo().sub, list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status de implantações, UpSell e atividades', cert:'Certificados de treinamento', ics:'Acesso rápido aos clientes ICS', semacesso:'Aguardando liberação de acesso', rdv:'Deslocamentos das atividades presenciais', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
   const mod = {impl: modoTipo, implDet: modoTipo, list:'list', editor:'list', config:'config', status:'status', cert:'cert', rdv:'rdv', ics:'ics'}[screen];
   document.querySelectorAll('.mainnav button').forEach(b => b.classList.toggle('active', b.dataset.go === mod));
   $('#btnCfgTop').classList.toggle('cfg-on', mod === 'config');
@@ -1629,6 +1683,7 @@ async function leaveGuard(){
   markClean(); return true;
 }
 async function go(mod){
+  if (ABAS.some(a => a[0] === mod) && !podeVer(mod)) return;
   if (!(await leaveGuard())) return;
   if (TIPOS[mod]){ modoTipo = mod; aplicarModoTipo(); $('#implSearch').value = ''; show('impl'); loadImpl(); if (!clientes.length) loadClientes().catch(() => {}); if (!tipos.length) loadTipos().catch(() => {}); }
   else if (mod === 'list'){ show('list'); loadList(); }
@@ -1644,16 +1699,17 @@ $('#btnCfgTop').addEventListener('click', () => go('config'));
 
 async function loadUsers(){
   $('#usersBody').innerHTML = '<div class="empty">Carregando usuários...</div>';
-  try { users = (await adminCall({ action:'list' })).users; renderUsers(); }
+  try { users = (await adminCall({ action:'list' })).users; await loadPerfis(); renderUsers(); }
   catch(e){ $('#usersBody').innerHTML = `<div class="empty">Não foi possível carregar os usuários: ${esc(e.message)}</div>`; }
 }
 const fmtDT = v => v ? new Date(v).toLocaleDateString('pt-BR') + ' ' + new Date(v).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : 'Nunca acessou';
 function renderUsers(){
   users.sort((a,b) => (a.nome||a.email).localeCompare(b.nome||b.email,'pt-BR'));
-  $('#usersBody').innerHTML = `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Usuário</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>
+  $('#usersBody').innerHTML = `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Usuário</th><th>Tipo</th><th>Perfil de acesso</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>
   ${users.map(u => { const me = u.id === myId; return `<tr data-id="${u.id}">
     <td class="emp">${esc(u.nome || '—')}<small>${esc(u.email)}${me ? ' (você)' : ''}</small></td>
     <td><span class="badge ${u.admin?'adm':'usr'}">${u.admin?'Administrador':'Usuário'}</span></td>
+    <td>${u.admin ? '<small style="color:var(--muted)">Acesso total</small>' : `<select class="u-perfil" data-uperfil aria-label="Perfil de acesso de ${esc(u.nome || u.email)}"><option value="">Sem perfil (sem acesso)</option>${perfis.map(p => `<option value="${p.id}"${String(userPerfil[u.id] ?? '') === String(p.id) ? ' selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>`}</td>
     <td><span class="badge ${u.banned?'off':'on'}">${u.banned?'Desativado':'Ativo'}</span></td>
     <td>${fmtDT(u.last_sign_in_at)}</td>
     <td><div class="ua">
@@ -1664,6 +1720,12 @@ function renderUsers(){
     </div></td></tr>`; }).join('')}
   </tbody></table></div>`;
   $('#usersBody').querySelectorAll('button[data-a]').forEach(b => b.onclick = () => userAction(b.closest('tr').dataset.id, b.dataset.a));
+  $('#usersBody').querySelectorAll('[data-uperfil]').forEach(sel => sel.onchange = async () => {
+    const uid = sel.closest('tr').dataset.id, pid = sel.value ? Number(sel.value) : null;
+    const { error } = await sb.from('usuario_perfil').upsert({ user_id: uid, perfil_id: pid, updated_at: new Date().toISOString() });
+    if (error){ flash('Erro: ' + error.message + (/usuario_perfil/.test(error.message) ? ' — rode o supabase-perfis-acesso.sql' : '')); return; }
+    userPerfil[uid] = pid; flash('Perfil atualizado. Vale no próximo acesso da pessoa (ou ao recarregar a página).');
+  });
 }
 async function userAction(id, a){
   const u = users.find(x => x.id === id); if (!u) return;
@@ -1720,6 +1782,7 @@ const cfgTipo = () => TIPOS[modoTipo];
 function aplicarModoTipo(){
   const t = cfgTipo();
   $('#implListTitle').textContent = t.titulo; $('#btnNewImpl').textContent = t.novo; $('#btnOsImpl').hidden = !t.os;
+  document.body.classList.toggle('impl-lista-ro', !podeEditar(modoTipo));
 }
 
 let impls = [], currentImpl = null;
@@ -1734,7 +1797,7 @@ const pbar = p => `<div class="pcell"><div class="pbar"><i class="${p>=100?'full
 
 async function loadImpl(){
   $('#implBody').innerHTML = '<div class="empty">Carregando...</div>';
-  const { data, error } = await sb.from('implantacoes').select('id,cliente,tipo,dados,atualizado_por_email,criado_por_email,updated_at').order('updated_at', { ascending:false });
+  const { data, error } = await sb.from('implantacoes').select('id,cliente,tipo,dados,criado_por,atualizado_por_email,criado_por_email,updated_at').order('updated_at', { ascending:false });
   if (error){ $('#implBody').innerHTML = `<div class="empty">Não foi possível carregar os dados: ${esc(error.message)}</div>`; return; }
   impls = data; renderImpl();
 }
@@ -1780,6 +1843,23 @@ function openImpl(id){
   $('#implMsg').textContent = ''; $('#implAuto').textContent = ''; clearTimeout(implTimer); markClean(); renderImplDet(); show('implDet');
   loadCatalog();
   $('#btnImplDelete').hidden = !(isAdmin && currentImpl.id);
+  // somente leitura: perfil só visualiza esta aba, ou o cadastro é de outra pessoa
+  implRO = !(podeEditar(KEY_DO_TIPO[currentImpl.tipo] || 'impl') && (isAdmin || !r || !r.criado_por || r.criado_por === myId));
+  $('#implRoTag').title = podeEditar(KEY_DO_TIPO[currentImpl.tipo] || 'impl') ? 'Cadastro criado por outra pessoa: só quem criou ou o administrador pode alterar' : 'Seu perfil permite apenas visualizar esta aba';
+  aplicarSomenteLeitura();
+}
+let implRO = false, roObs = null;
+// trava os campos da tela do cadastro; os botões de exportar, abas e Voltar continuam funcionando
+function aplicarSomenteLeitura(){
+  document.body.classList.toggle('impl-ro', implRO);
+  const travar = () => document.querySelectorAll('#implDetView input, #implDetView select, #implDetView textarea').forEach(el => {
+    if (el.type === 'file') return;
+    if (implRO && !el.disabled){ el.disabled = true; el.dataset.roDis = '1'; }
+    else if (!implRO && el.dataset.roDis){ el.disabled = false; delete el.dataset.roDis; }
+  });
+  travar();
+  if (implRO && !roObs){ roObs = new MutationObserver(() => requestAnimationFrame(travar)); roObs.observe($('#implDetView'), { childList:true, subtree:true }); }
+  if (!implRO && roObs){ roObs.disconnect(); roObs = null; }
 }
 const PRODUTOS = ['Flits','Gool','ICS','CDF','NAAV','VISTTA','Outros'];
 function readImplHeader(){
@@ -1892,8 +1972,9 @@ $('#btnAddAtv').addEventListener('click', () => {
 /* ---------- configurações: abas ---------- */
 function cfgTab(t){
   document.querySelectorAll('.ctabs button').forEach(b => b.classList.toggle('active', b.dataset.ct === t));
-  $('#cfgUsers').hidden = t !== 'users'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCoord').hidden = t !== 'coord'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos'; $('#cfgCli').hidden = t !== 'cli';
+  $('#cfgUsers').hidden = t !== 'users'; $('#cfgPerfis').hidden = t !== 'perfis'; $('#cfgAna').hidden = t !== 'ana'; $('#cfgCoord').hidden = t !== 'coord'; $('#cfgCat').hidden = t !== 'cat'; $('#cfgChk').hidden = t !== 'chk'; $('#cfgProd').hidden = t !== 'prod'; $('#cfgFer').hidden = t !== 'fer'; $('#cfgTipos').hidden = t !== 'tipos'; $('#cfgCli').hidden = t !== 'cli';
   if (t === 'users'){ loadUsers(); loadStorage(); }
+  else if (t === 'perfis'){ loadPerfis().then(renderPerfis); }
   else if (t === 'ana'){ loadAnalistas(); }
   else if (t === 'coord'){ loadCoordenadores(); }
   else if (t === 'cat'){ loadCatalog(); }
@@ -1904,6 +1985,52 @@ function cfgTab(t){
   else if (t === 'cli'){ loadClientes().then(renderClientes); }
 }
 document.querySelectorAll('.ctabs button').forEach(b => b.addEventListener('click', () => cfgTab(b.dataset.ct)));
+
+/* ---------- perfis de acesso: cadastro ---------- */
+let perfis = [], userPerfil = {};
+async function loadPerfis(){
+  const [p, up] = await Promise.all([sb.from('perfis').select('*').order('nome'), sb.from('usuario_perfil').select('user_id,perfil_id')]);
+  if (p.error){ perfis = []; $('#perfList').innerHTML = `<div class="note">Perfis indisponíveis: ${esc(p.error.message)}. Rode o arquivo supabase-perfis-acesso.sql no Supabase.</div>`; return; }
+  perfis = p.data || []; userPerfil = Object.fromEntries((up.data || []).map(x => [x.user_id, x.perfil_id]));
+}
+function renderPerfis(){
+  if (!perfis.length && $('#perfList').querySelector('.note')) return;
+  const usando = id => Object.values(userPerfil).filter(v => String(v) === String(id)).length;
+  $('#perfList').innerHTML = perfis.length ? perfis.map(p => `<div class="det-card perf-card" data-pid="${p.id}">
+    <div class="perf-h"><input type="text" value="${esc(p.nome)}" data-pnome aria-label="Nome do perfil"><small>${usando(p.id)} usuário(s) com este perfil</small>
+      <button type="button" class="b-del" data-pdel aria-label="Excluir perfil" title="Excluir perfil">×</button></div>
+    <div class="perf-grid">${ABAS.map(([k, t]) => { const v = p.abas?.[k] || 'nenhum'; return `<label class="f">${t}<select data-paba="${k}" class="n-${v}">${NIVEIS.map(([nv, nt]) => `<option value="${nv}"${v === nv ? ' selected' : ''}>${nt}</option>`).join('')}</select></label>`; }).join('')}</div>
+  </div>`).join('') : '<div class="empty">Nenhum perfil criado ainda.</div>';
+}
+$('#perfList').addEventListener('change', async e => {
+  const card = e.target.closest('[data-pid]'); if (!card) return; const p = perfis.find(x => String(x.id) === card.dataset.pid);
+  let upd;
+  if (e.target.matches('[data-paba]')){ upd = { abas: { ...(p.abas || {}), [e.target.dataset.paba]: e.target.value } }; e.target.className = 'n-' + e.target.value; }
+  else if (e.target.matches('[data-pnome]')){ const nome = e.target.value.trim(); if (!nome){ e.target.value = p.nome; return; } upd = { nome }; }
+  else return;
+  const { error } = await sb.from('perfis').update(upd).eq('id', p.id);
+  if (error){ flash('Erro: ' + error.message); return; }
+  Object.assign(p, upd); flash('Perfil salvo. Vale no próximo acesso das pessoas (ou ao recarregar a página).');
+});
+$('#perfList').addEventListener('click', async e => {
+  if (!e.target.closest('[data-pdel]')) return;
+  const p = perfis.find(x => String(x.id) === e.target.closest('[data-pid]').dataset.pid);
+  const v = await ask('Excluir perfil?', `O perfil "${p.nome}" será excluído. Quem estiver nele fica sem acesso até receber outro perfil.`, [['Cancelar','b-ghost',null],['Excluir','b-danger','ok']]);
+  if (!v) return;
+  const { error } = await sb.from('perfis').delete().eq('id', p.id);
+  if (error){ flash('Erro: ' + error.message); return; }
+  await loadPerfis(); renderPerfis();
+});
+async function addPerfil(){
+  const nome = $('#perfNovo').value.trim(); if (!nome) return;
+  if (perfis.some(p => norm(p.nome) === norm(nome))){ flash('Já existe um perfil com esse nome.'); return; }
+  const abas = Object.fromEntries(ABAS.map(([k]) => [k, 'nenhum']));
+  const { error } = await sb.from('perfis').insert({ nome, abas });
+  if (error){ flash('Erro: ' + error.message); return; }
+  $('#perfNovo').value = ''; await loadPerfis(); renderPerfis();
+}
+$('#btnAddPerfil').addEventListener('click', addPerfil);
+$('#perfNovo').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); addPerfil(); } });
 
 /* ---------- coordenadores ---------- */
 let coordenadores = [];
@@ -2070,6 +2197,7 @@ $('#catNew').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preven
 /* salvamento automático */
 let implTimer = null;
 function scheduleImplSave(){
+  if (implRO) return;
   clearTimeout(implTimer);
   if (!$('#imNome').value.trim()){ $('#implAuto').textContent = 'Informe o nome do cliente para salvar.'; return; }
   $('#implAuto').textContent = 'Salvando…';
@@ -3017,6 +3145,7 @@ $('#btnImplBack').addEventListener('click', () => go(modoTipo));
 
 let implSaving = false;
 async function saveImpl(silent){
+  if (implRO) return false;
   clearTimeout(implTimer);
   if (implSaving){ implTimer = setTimeout(() => saveImpl(silent), 800); return false; }
   const head = readImplHeader();
@@ -3152,6 +3281,9 @@ function openStatus(r){
   stCurrent = r; const st = (r.dados ||= {}).status || {};
   $('#stTitle').textContent = 'Status Report – ' + (r.cliente || 'Sem nome');
   $('#stObs').value = st.obs || ''; $('#stAtencao').value = st.atencao || ''; $('#stAuto').textContent = '';
+  { const k = KEY_DO_TIPO[tipoDe(r)] || 'impl', ed = (podeEditar('status') || podeEditar(k)) && (isAdmin || !r.criado_por || r.criado_por === myId);
+    $('#stObs').readOnly = $('#stAtencao').readOnly = !ed; $('#stAuto').textContent = ed ? '' : 'Somente leitura';
+    $('#btnStOpenImpl').hidden = !podeVer(k); }
   $('#stReport').innerHTML = reportHTML(r);
   $('#stListWrap').hidden = true; $('#stDetail').hidden = false; window.scrollTo({top:0});
 }
@@ -3163,7 +3295,7 @@ function openStatus(r){
   stTimer = setTimeout(saveStatus, 1200);
 }));
 async function saveStatus(){
-  if (!stCurrent) return;
+  if (!stCurrent || $('#stObs').readOnly) return;
   const { data, error } = await sb.from('implantacoes').update({ dados: stCurrent.dados }).eq('id', stCurrent.id).select('updated_at').single();
   if (error){ $('#stAuto').textContent = 'Erro ao salvar'; flash('Erro: ' + error.message); return; }
   stCurrent.updated_at = data?.updated_at || new Date().toISOString(); $('#stReport').innerHTML = reportHTML(stCurrent);
@@ -3556,10 +3688,13 @@ if (sb){
   sb.auth.onAuthStateChange((event, session) => {
     if (session?.user){
       $('#userEmail').textContent = session.user.email;
-      myId = session.user.id; checkAdmin(session.user.id); loadAnalistas(); loadCoordenadores(); loadProdutos(); loadCatalog(); loadFeriados();
-      if (document.body.dataset.screen === 'login'){ modoTipo = 'impl'; aplicarModoTipo(); show('impl'); loadImpl(); loadClientes().catch(() => {}); loadTipos().catch(() => {}); }
+      myId = session.user.id; loadAnalistas(); loadCoordenadores(); loadProdutos(); loadCatalog(); loadFeriados();
+      carregarAcesso(session.user.id).then(() => {
+        if (['login','semacesso'].includes(document.body.dataset.screen)){ const a = primeiraAba(); if (a) go(a); else show('semacesso'); }
+        loadClientes().catch(() => {}); loadTipos().catch(() => {});
+      });
     } else {
-      currentId = null; records = []; isAdmin = false; myId = null; document.body.classList.remove('is-admin'); closeForm(); updateDeleteBtn(); fillState({}); markClean(); refresh(); impls = []; currentImpl = null;
+      currentId = null; records = []; isAdmin = false; myId = null; acesso = {}; document.body.classList.remove('is-admin'); closeForm(); updateDeleteBtn(); fillState({}); markClean(); refresh(); impls = []; currentImpl = null;
       $('#lgPass').value = ''; show('login');
     }
   });
@@ -3923,6 +4058,7 @@ async function loadIcs(){
 }
 function renderIcs(){
   const q = norm($('#icsSearch').value);
+  $('#icsNew').hidden = !podeEditar('ics');
   document.querySelectorAll('#icsFil [data-reg]').forEach(b => { const n = icsList.filter(c => (icsSit === '' || (icsSit === 'ativo') === c.ativo) && (b.dataset.reg === '' || (b.dataset.reg === '-' ? !c.regiao : c.regiao === b.dataset.reg))).length;
     b.setAttribute('aria-pressed', b.dataset.reg === icsReg); b.innerHTML = `${esc(b.textContent.replace(/\s*\d+$/, ''))} <b>${n}</b>`; });
   document.querySelectorAll('#icsFil [data-sit]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sit === icsSit));
@@ -3939,7 +4075,7 @@ function renderIcs(){
       <td class="ics-db">${esc(c.database || '—')}</td>
       <td><span class="badge ${c.ativo ? 'on' : 'off'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
       <td>${u ? `<span class="ics-url">${esc(u.replace(/^https?:\/\//, ''))}</span>` : '<span class="ics-sem">Sem link cadastrado</span>'}</td>
-      <td><div class="ics-act">${u ? `<a class="ics-open" href="${esc(u)}" target="_blank" rel="noopener noreferrer">Abrir ICS ↗</a>` : ''}<button type="button" class="b-ghost" data-ied>Editar</button></div></td></tr>`; }).join('')}
+      <td><div class="ics-act">${u ? `<a class="ics-open" href="${esc(u)}" target="_blank" rel="noopener noreferrer">Abrir ICS ↗</a>` : ''}${podeEditar('ics') ? '<button type="button" class="b-ghost" data-ied>Editar</button>' : ''}</div></td></tr>`; }).join('')}
     </tbody></table></div></div>`).join('');
 }
 $('#icsSearch').addEventListener('input', renderIcs);
@@ -3991,10 +4127,9 @@ $('#icsXlsx').addEventListener('click', async () => {
 async function icsGarantirCliente(nome, origem){
   nome = String(nome || '').trim(); if (!nome) return;
   try {
-    const { data } = await sb.from('clientes_ics').select('id,nome,codigo');
-    if ((data || []).some(c => norm(c.nome) === norm(nome) || norm(c.codigo) === norm(nome))) return;
-    const r = await sb.from('clientes_ics').insert({ nome, origem, ativo: true });
-    if (!r.error) flash(`"${nome}" incluído na lista de Clientes ICS (sem link: preencha em Clientes ICS).`);
+    // função no banco: não duplica e funciona mesmo para quem não tem a aba Clientes ICS
+    const { data, error } = await sb.rpc('ics_garantir_cliente', { p_nome: nome, p_origem: origem });
+    if (!error && data === true) flash(`"${nome}" incluído na lista de Clientes ICS (sem link: preencha em Clientes ICS).`);
   } catch {}
 }
 
