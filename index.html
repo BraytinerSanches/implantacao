@@ -2220,7 +2220,7 @@ $('#btnImplCsv').addEventListener('click', async () => {
   const lines = [['Ordem','Atividade','Ativ. prev.','Ativ. real','Dias prev.','Dias real','Início','Fim','% concl.','Responsável','Modalidade','Fora do prazo','Status','Observação']]
     .concat(atv.map(a => [a.ordem, a.nome, a.prev, a.real, String(a.diasPrev).replace('.',','), String(a.diasReal).replace('.',','), a.inicio?fmtDate(a.inicio):'', a.fim?fmtDate(a.fim):'', (a.pct||0)+'%', a.resp, a.modalidade||'', a.foraPrazo ? 'Sim' : '', a.status, a.obs]));
   const csv = '\ufeff' + lines.map(l => l.map(q).join(';')).join('\r\n');
-  await save(`Implantacao_${fileSlug(c.nome)}.csv`, new Blob([csv], { type:'text/csv;charset=utf-8' })); flash('CSV exportado.');
+  await save(`Atividades_${fileSlug(c.nome).toUpperCase()}.csv`, new Blob([csv], { type:'text/csv;charset=utf-8' })); flash('CSV exportado.');
 });
 async function captureImpl(){
   const el = $('#implDetView');
@@ -2240,7 +2240,7 @@ async function captureImpl(){
         x.replaceWith(sp); });
       d.querySelectorAll('#atvTable th').forEach(th => th.style.minWidth = '0'); } });
 }
-function implFileBase(){ const t = !$('#tabChk').hidden ? 'Checklist' : !$('#tabCro').hidden ? 'Cronograma' : 'Implantacao'; return `${t}_${fileSlug(readImplHeader().nome)}`; }
+function implFileBase(){ const n = readImplHeader().nome; return !$('#tabChk').hidden ? nomeArq('chk', n) : !$('#tabCro').hidden ? nomeArq('cro', n) : `Atividades_${fileSlug(n).toUpperCase()}`; }
 $('#btnImplImg').addEventListener('click', async () => {
   if (!$('#tabEnt').hidden) return entregaExport('png');
   const canvas = await captureImpl();
@@ -2367,7 +2367,7 @@ $('#tabCro').addEventListener('input', e => {
 });
 $('#btnCroXlsx').addEventListener('click', async () => {
   if (!window.ExcelJS){ flash('Biblioteca do Excel não carregou. Recarregue a página.'); return; }
-  await save(`Cronograma_${fileSlug(readImplHeader().nome)}.xlsx`, await croXlsxBlob()); flash('Excel exportado.');
+  await save(`${nomeArq('cro', readImplHeader().nome)}.xlsx`, await croXlsxBlob()); flash('Excel exportado.');
 });
 async function croXlsxBlob(){
   const { h, atv, weeks } = croData();
@@ -2569,7 +2569,7 @@ async function osBlob(){
 }
 $('#btnOsDown').addEventListener('click', async () => {
   try { const b = await osBlob(); const ext = (currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0];
-    await save(`02_OS_${fileSlug(readImplHeader().nome)}${ext}`, b); } catch(e){ flash('Não foi possível baixar a OS: ' + (e.message || e)); }
+    await save(`${nomeArq('os', readImplHeader().nome)}${ext}`, b); } catch(e){ flash('Não foi possível baixar a OS: ' + (e.message || e)); }
 });
 $('#btnOsUp').addEventListener('click', () => {
   if (!currentImpl.id){ flash('Salve a implantação antes de anexar a OS.'); return; }
@@ -2589,26 +2589,26 @@ $('#osAttachInput').addEventListener('change', async () => {
 $('#btnAllFiles').addEventListener('click', async () => {
   if (!window.JSZip){ flash('Biblioteca de compactação não carregou. Recarregue a página.'); return; }
   const tabAtual = document.querySelector('#implTabs button.active')?.dataset.tab || 'atv';
-  const slug = fileSlug(readImplHeader().nome), zip = new JSZip(), falhas = [];
+  const nomeCli = readImplHeader().nome, slug = fileSlug(nomeCli).toUpperCase(), zip = new JSZip(), falhas = [];
   $('#busyModal').hidden = false;
   const step = t => $('#busyText').textContent = t;
   try {
     const tcfg = TIPOS[KEY_DO_TIPO[currentImpl.tipo] || 'impl'];
     step('Arquivo da OS…');
-    if (tcfg.os) try { const b = await osBlob(); if (b) zip.file(`02_OS_${slug}${(currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0]}`, b); else falhas.push('OS (nenhum arquivo anexado)'); } catch { falhas.push('OS'); }
+    if (tcfg.os) try { const b = await osBlob(); if (b) zip.file(`${nomeArq('os', nomeCli)}${(currentImpl.dados.os.path.match(/\.[a-z0-9]+$/i) || ['.xlsx'])[0]}`, b); else falhas.push('OS (nenhum arquivo anexado)'); } catch { falhas.push('OS'); }
     step('Cronograma…');
-    try { zip.file(`05_Cronograma_${slug}.xlsx`, await croXlsxBlob()); } catch { falhas.push('Cronograma'); }
+    try { zip.file(`${nomeArq('cro', nomeCli)}.xlsx`, await croXlsxBlob()); } catch { falhas.push('Cronograma'); }
     step('Entrega para suporte…');
-    if (tcfg.entrega) try { implTab('ent'); await new Promise(r => setTimeout(r, 300)); syncEntrega(); zip.file(`08_Entrega_Suporte_${slug}.pdf`, entregaCanvasToPdf(await capture())); } catch(e){ console.error(e); falhas.push('Entrega para suporte'); }
+    if (tcfg.entrega) try { implTab('ent'); await new Promise(r => setTimeout(r, 300)); syncEntrega(); zip.file(`${nomeArq('ent', nomeCli)}.pdf`, entregaCanvasToPdf(await capture())); } catch(e){ console.error(e); falhas.push('Entrega para suporte'); }
     step('Status report…');
     try { const r0 = impls.find(x => x.id === currentImpl.id);
-      zip.file(`09_Status_${slug}.pptx`, await stPptx({ id: currentImpl.id, cliente: readImplHeader().nome, dados: currentImpl.dados, updated_at: r0?.updated_at || new Date().toISOString() }, '', true)); } catch(e){ console.error(e); falhas.push('Status report'); }
+      zip.file(`${nomeArq('status', nomeCli)}.pptx`, await stPptx({ id: currentImpl.id, cliente: readImplHeader().nome, dados: currentImpl.dados, updated_at: r0?.updated_at || new Date().toISOString() }, '', true)); } catch(e){ console.error(e); falhas.push('Status report'); }
     step('Checklist…');
-    try { implTab('chk'); await new Promise(r => setTimeout(r, 300)); zip.file(`10_Checklist_${slug}.pdf`, canvasToPdfBlob(await captureImpl())); } catch(e){ console.error(e); falhas.push('Checklist'); }
+    try { implTab('chk'); await new Promise(r => setTimeout(r, 300)); zip.file(`${nomeArq('chk', nomeCli)}.pdf`, canvasToPdfBlob(await captureImpl())); } catch(e){ console.error(e); falhas.push('Checklist'); }
     step('Compactando…');
     const blob = await zip.generateAsync({ type:'blob' });
     implTab(tabAtual); $('#busyModal').hidden = true;
-    await save(`Implantacao_${slug}.zip`, blob);
+    await save(`${slug}.zip`, blob);
     flash(falhas.length ? 'Baixado. Ficaram de fora: ' + falhas.join(', ') : 'Todos os arquivos baixados.');
   } catch(e){ console.error(e); implTab(tabAtual); $('#busyModal').hidden = true; flash('Erro ao gerar os arquivos.'); }
 });
@@ -3144,6 +3144,9 @@ $('#btnAddChkItem').addEventListener('click', () => {
 });
 
 function fileSlug(t){ return (t || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,''); }
+// padrão de nomes da pasta do projeto no Teams: NN_DOCUMENTO_CLIENTE
+const ARQ = { os:'02_OS', cro:'04_CRONOGRAMA', status:'06_STATUS', ent:'08_Entrega_Suporte', chk:'11_CheckList', rdv:'12_RDV' };
+const nomeArq = (k, cliente, extra) => `${ARQ[k]}_${fileSlug(cliente).toUpperCase()}${extra ? '_' + fileSlug(extra) : ''}`;
 
 $('#imChamado').addEventListener('input', () => { currentImpl.dados.chamado = $('#imChamado').value.trim(); implChanged(); });
 $('#implForm').addEventListener('input', () => { $('#implTitle').textContent = $('#imNome').value.trim() || cfgTipo().nova; currentImpl.dados.cliente = readImplHeader(); if (!$('#tabChk').hidden) renderChecklist(); if (!$('#tabCro').hidden) renderCronograma();
@@ -3315,7 +3318,7 @@ $('#btnStOpenImpl').addEventListener('click', async () => { clearTimeout(stTimer
 document.querySelectorAll('[data-stdl]').forEach(b => b.addEventListener('click', () => stCurrent && stDownload(stCurrent, b.dataset.stdl)));
 
 async function stDownload(r, kind){
-  const base = 'Status_' + fileSlug(r.cliente);
+  const base = nomeArq('status', r.cliente);
   try {
     if (kind === 'pptx'){ await stPptx(r, base); return; }
     const box = $('#stRender'); box.innerHTML = reportHTML(r);
@@ -3721,9 +3724,7 @@ let downloads = null;
 function setStatus(t, err){ const el=$('#status'); el.textContent=t; el.style.color = err ? '#B3261E' : ''; }
 function fileBase(){
   const s = readState();
-  const name = (s.empresa || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
-  const d = new Date(); const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  return `Entrega_Suporte_${name}_${ds}`;
+  return nomeArq('ent', s.empresa || 'Cliente');
 }
 async function capture(){
   await document.fonts.ready;
@@ -4031,8 +4032,8 @@ $('#rdvXlsx').addEventListener('click', async () => {
   try {
     const buf = Uint8Array.from(atob(RDV_MODELO_B64), c => c.charCodeAt(0));
     const out = await rdvPreencher(ExcelJS, buf, { data: $('#rdvData').value || iso(new Date()), colaborador: $('#rdvColab').value, cliente: $('#rdvCli').value, empresa: $('#rdvEmp').value, projeto: $('#rdvProjeto').value, cc: $('#rdvCC').value }, L);
-    const pj = $('#rdvProj').value ? '_' + $('#rdvProj').selectedOptions[0].textContent.split(' · ')[0] : '';
-    const nome = `RDV_${($('#rdvColab').value + pj).replace(/[^\p{L}\p{N}]+/gu, '_')}_${$('#rdvDe').value}_a_${$('#rdvAte').value}.xlsx`;
+    const nome = $('#rdvProj').value ? `${nomeArq('rdv', $('#rdvProj').selectedOptions[0].textContent.split(' · ')[0], $('#rdvColab').value)}.xlsx`
+      : `${ARQ.rdv}_${fileSlug($('#rdvColab').value)}_${$('#rdvDe').value}_a_${$('#rdvAte').value}.xlsx`;
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); a.download = nome;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     flash(`Excel gerado com ${L.length} linha(s).`);
