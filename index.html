@@ -132,6 +132,29 @@ body:not([data-screen="ics"]) #icsView{display:none}
 #icsView tr.ics-off a.ics-open{background:var(--muted)}
 #icsView .ics-act{display:flex;gap:6px;justify-content:flex-end;align-items:center}
 #icsView .ics-url{font-size:12px;color:var(--muted);word-break:break-all}
+/* ---------- Power BI ---------- */
+body[data-screen="pbi"] .tabs, body[data-screen="pbi"] #wrap, body[data-screen="pbi"] .ed-only, body[data-screen="pbi"] #listView{display:none!important}
+body:not([data-screen="pbi"]) #pbiView{display:none}
+#pbiView{max-width:1400px;margin:0 auto;padding:22px 20px 40px}
+#pbiView .pbi-sen{display:inline-flex;align-items:center;gap:4px;font-family:ui-monospace,Consolas,monospace;font-size:13.5px}
+#pbiView .pbi-sen span{min-width:150px;letter-spacing:.04em}
+#pbiView .ic{background:transparent;border:1px solid var(--line);color:var(--ink);padding:3px 7px;font-size:12.5px;font-weight:600;border-radius:4px;line-height:1.3}
+#pbiView .ic:hover{border-color:var(--ink)}
+#pbiView td.u{font-weight:700;white-space:nowrap}
+#pbiView td.u .ic{margin-left:6px}
+#pbiView .tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:2px 7px;background:var(--field);border:1px solid var(--line);color:var(--muted)}
+#pbiView .tag.bi{color:#1F4E79;border-color:#9DB9D8;background:#EAF1F9}
+#pbiView .tag.tel{color:#7A3E00;border-color:#E6C08F;background:#FFF3E3}
+#pbiView td.obs{font-size:13px;color:var(--muted);max-width:240px}
+#pbiView a.pbi-open{display:inline-flex;gap:6px;background:var(--orange);color:#fff;font-weight:700;font-size:13px;padding:5px 11px;border-radius:5px;text-decoration:none;white-space:nowrap}
+#pbiView .pbi-act{display:flex;gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+#pbiView tr.off td{color:var(--muted)}
+#pbiView .pbi-grp{margin-bottom:14px}
+#pbiView .pbi-gh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+#pbiView .pbi-gh h3{margin:0;font-size:16px;color:var(--navy)}
+#pbiView .pbi-gh small{display:block;font-size:12.5px;color:var(--muted);font-weight:600;font-family:ui-monospace,Consolas,monospace}
+#pbiView .pbi-mail{font-size:13px}
+#pbiView .pbi-note{font-size:12.5px;color:var(--muted);margin:-4px 0 12px}
 /* ---------- perfis de acesso ---------- */
 body:not([data-screen="semacesso"]) #semAcessoView{display:none}
 body[data-screen="semacesso"] .tabs, body[data-screen="semacesso"] #wrap, body[data-screen="semacesso"] .ed-only, body[data-screen="semacesso"] #listView{display:none!important}
@@ -281,6 +304,12 @@ label.chip:has(input:checked){background:var(--orange);border-color:var(--orange
 .mainnav button{background:transparent;border:0;border-radius:0;color:var(--muted);padding:12px 14px 10px;border-bottom:3px solid transparent;white-space:nowrap}
 .mainnav button:hover{color:var(--topink)}
 .mainnav button.active{color:var(--topink);border-bottom-color:var(--orange)}
+.mainnav{align-items:center}
+.mainnav .modsw{display:flex;flex:none;background:var(--field);border:1px solid var(--line);border-radius:7px;padding:3px;margin:6px 14px 6px 0;gap:2px}
+.mainnav .modsw button{border:0;border-radius:5px;padding:6px 14px;font-size:13.5px;font-weight:700;color:var(--muted)}
+.mainnav .modsw button[aria-selected="true"]{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .mainnav .modsw button[aria-selected="true"]{background:var(--orange)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mainnav .modsw button[aria-selected="true"]{background:var(--orange)}}
 body[data-screen="login"] .mainnav{display:none}
 body[data-screen^="impl"] .ed-only, body[data-screen^="impl"] #listView{display:none!important}
 body[data-screen="impl"] #wrap{display:none!important}
@@ -604,13 +633,17 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
 </header>
 
 <nav class="mainnav" aria-label="Módulos">
-  <button type="button" data-go="impl">Implantações</button>
-  <button type="button" data-go="upsell">UpSell</button>
-  <button type="button" data-go="ativ">Atividades</button>
-  <button type="button" data-go="status">Status Report</button>
-  <button type="button" data-go="ics">Clientes ICS</button>
-  <button type="button" data-go="rdv" hidden>RDV / KM</button><!-- RDV desativado por enquanto -->
-  <button type="button" data-go="cert">Certificados</button>
+  <div class="modsw" role="tablist" aria-label="Módulo">
+    <button type="button" data-mod="op" role="tab">Operações</button><button type="button" data-mod="cons" role="tab">Consulta</button>
+  </div>
+  <button type="button" data-go="impl" data-grp="op">Implantações</button>
+  <button type="button" data-go="upsell" data-grp="op">UpSell</button>
+  <button type="button" data-go="ativ" data-grp="op">Atividades</button>
+  <button type="button" data-go="status" data-grp="op">Status Report</button>
+  <button type="button" data-go="cert" data-grp="op">Certificados</button>
+  <button type="button" data-go="rdv" data-grp="op" hidden>RDV / KM</button><!-- RDV desativado por enquanto -->
+  <button type="button" data-go="ics" data-grp="cons">Clientes ICS</button>
+  <button type="button" data-go="pbi" data-grp="cons">Power BI</button>
 </nav>
 
 
@@ -1090,6 +1123,33 @@ select.r-cit{background:#E6EEF4;color:var(--navy);font-weight:600}select.r-cli{b
     </div>
   </div>
 </div>
+<section id="pbiView">
+  <div class="ls-bar"><h2>Power BI</h2>
+    <input type="text" id="pbiSearch" placeholder="Buscar por usuário, empresa, e-mail ou relatório" aria-label="Buscar no Power BI">
+    <button type="button" class="b-alt" id="pbiXlsx" style="color:var(--ink)">Exportar Excel</button>
+    <button type="button" class="b-main" id="pbiNew">+ Novo acesso</button></div>
+  <div class="st-tipos" id="pbiVis" role="group" aria-label="Visualizar">
+    <button type="button" data-vis="acessos">Acessos (usuário e senha)</button><button type="button" data-vis="empresas">Empresas por relatório</button>
+    <span style="width:1px;height:24px;background:var(--line);margin:0 4px"></span>
+    <span id="pbiFil"></span>
+  </div>
+  <p class="pbi-note" id="pbiDica">Senhas ficam ocultas: use 👁 para ver e "Copiar" para colar no login do Power BI.</p>
+  <div id="pbiBody"></div>
+</section>
+<div class="modal" id="pbiModal" hidden role="dialog" aria-modal="true" aria-labelledby="pbiTitle">
+  <div class="box fbox" style="max-width:720px!important">
+    <h2 id="pbiTitle">Acesso Power BI</h2>
+    <div class="fgrid" id="pbiForm"></div>
+    <div class="msg-err" id="pbiErr" role="alert"></div>
+    <div class="mb">
+      <button type="button" class="b-danger" id="pbiDel" hidden style="margin-right:auto">Excluir</button>
+      <button type="button" class="b-ghost" id="pbiCancel">Cancelar</button>
+      <button type="button" class="b-save" id="pbiSave">Salvar</button>
+    </div>
+  </div>
+</div>
+<datalist id="pbiAcessoSug"><option value="BI"><option value="Telemetria"><option value="IQT"><option value="CD_LATAM"></datalist>
+<datalist id="pbiTipoSug"><option value="Consórcio / Órgão Gestor"><option value="Grupo de Empresa"><option value="Órgão Gestor"><option value="Consórcio"></datalist>
 <section id="semAcessoView">
   <div class="det-card">
     <h2 style="margin:0 0 8px">Acesso ainda não liberado</h2>
@@ -1546,7 +1606,16 @@ async function checkAdmin(uid){
 }
 
 /* ---------- perfis de acesso (Sem acesso / Visualizar / Editar por aba) ---------- */
-const ABAS = [['impl','Implantações'],['upsell','UpSell'],['ativ','Atividades'],['status','Status Report'],['ics','Clientes ICS'],['cert','Certificados']];
+const ABAS = [['impl','Implantações'],['upsell','UpSell'],['ativ','Atividades'],['status','Status Report'],['cert','Certificados'],['ics','Clientes ICS'],['pbi','Power BI']];
+const MODULOS = { op:['impl','upsell','ativ','status','cert'], cons:['ics','pbi'] };
+const modDe = aba => Object.keys(MODULOS).find(m => MODULOS[m].includes(aba));
+let modAtual = 'op';
+// mostra só as abas do módulo escolhido (e que o perfil pode ver)
+function aplicarMenu(){
+  Object.keys(MODULOS).forEach(m => { const b = document.querySelector(`.modsw [data-mod="${m}"]`); b.hidden = !MODULOS[m].some(podeVer); b.setAttribute('aria-selected', m === modAtual); });
+  document.querySelectorAll('.mainnav button[data-go]').forEach(b => { if (b.dataset.go !== 'rdv') b.hidden = !podeVer(b.dataset.go) || b.dataset.grp !== modAtual; });
+  $('.mainnav .modsw').hidden = Object.keys(MODULOS).filter(m => MODULOS[m].some(podeVer)).length < 1;
+}
 const NIVEIS = [['nenhum','Sem acesso'],['ver','Visualizar'],['editar','Editar']];
 let acesso = {};
 const nivel = a => isAdmin ? 'editar' : (acesso[a] || 'nenhum');
@@ -1556,15 +1625,19 @@ async function carregarAcesso(uid){
   await checkAdmin(uid);
   acesso = {};
   if (!isAdmin){ const { data, error } = await sb.rpc('minhas_abas'); if (!error && data && typeof data === 'object') acesso = data; }
-  document.querySelectorAll('.mainnav button[data-go]').forEach(b => { if (b.dataset.go !== 'rdv') b.hidden = !podeVer(b.dataset.go); });
+  aplicarMenu();
 }
 const primeiraAba = () => ABAS.map(a => a[0]).find(podeVer);
+document.querySelectorAll('.modsw [data-mod]').forEach(b => b.addEventListener('click', () => {
+  const aba = MODULOS[b.dataset.mod].find(podeVer); if (aba) go(aba);
+}));
 
 function show(screen){
   document.body.dataset.screen = screen;
-  $('#subtitle').textContent = {impl: cfgTipo().sub, implDet: cfgTipo().sub, list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status de implantações, UpSell e atividades', cert:'Certificados de treinamento', ics:'Acesso rápido aos clientes ICS', semacesso:'Aguardando liberação de acesso', rdv:'Deslocamentos das atividades presenciais', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
-  const mod = {impl: modoTipo, implDet: modoTipo, list:'list', editor:'list', config:'config', status:'status', cert:'cert', rdv:'rdv', ics:'ics'}[screen];
-  document.querySelectorAll('.mainnav button').forEach(b => b.classList.toggle('active', b.dataset.go === mod));
+  $('#subtitle').textContent = {impl: cfgTipo().sub, implDet: cfgTipo().sub, list:'Entregas para o suporte', users:'Acesso restrito ao administrador', config:'Acesso restrito ao administrador', status:'Status de implantações, UpSell e atividades', cert:'Certificados de treinamento', ics:'Acesso rápido aos clientes ICS', pbi:'Acessos e relatórios do Power BI', semacesso:'Aguardando liberação de acesso', rdv:'Deslocamentos das atividades presenciais', atend:'Visitas, treinamentos e retreinamentos', clientes:'Cadastro de clientes e deslocamento'}[screen] || 'Preencha, salve e baixe em PDF ou imagem';
+  const mod = {impl: modoTipo, implDet: modoTipo, list:'list', editor:'list', config:'config', status:'status', cert:'cert', rdv:'rdv', ics:'ics', pbi:'pbi'}[screen];
+  document.querySelectorAll('.mainnav button[data-go]').forEach(b => b.classList.toggle('active', b.dataset.go === mod));
+  if (modDe(mod) && modDe(mod) !== modAtual){ modAtual = modDe(mod); aplicarMenu(); }
   $('#btnCfgTop').classList.toggle('cfg-on', mod === 'config');
   if (screen === 'editor') fitPreview();
   window.scrollTo({top:0});
@@ -1699,11 +1772,12 @@ async function go(mod){
   else if (mod === 'config' && isAdmin){ show('config'); cfgTab('users'); }
   else if (mod === 'status'){ show('status'); stShowList(); loadImpl().then(renderStCards); }
   else if (mod === 'ics'){ show('ics'); loadIcs(); }
+  else if (mod === 'pbi'){ show('pbi'); loadPbi(); }
   else if (mod === 'rdv'){ show('rdv'); rdvInit(); }
   else if (mod === 'cert'){ show('cert'); certSugestoes(); window.certRender && window.certRender(); }
 
 }
-document.querySelectorAll('.mainnav button').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+document.querySelectorAll('.mainnav button[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
 $('#btnCfgTop').addEventListener('click', () => go('config'));
 
 async function loadUsers(){
@@ -3673,7 +3747,7 @@ $('#btnAtXlsx').addEventListener('click', async () => {
 });
 // fechar janelas com Esc / clique fora
 ['#cliModal','#atModal'].forEach(id => { $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).hidden = true; }); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('#cliModal').hidden = true; $('#atModal').hidden = true; $('#icsModal').hidden = true; } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('#cliModal').hidden = true; $('#atModal').hidden = true; $('#icsModal').hidden = true; $('#pbiModal').hidden = true; } });
 
 /* ---------- armazenamento (admin) ---------- */
 const LIMITE_MB = 500; // limite do plano gratuito do Supabase
@@ -4142,6 +4216,122 @@ async function icsGarantirCliente(nome, origem){
     if (!error && data === true) flash(`"${nome}" incluído na lista de Clientes ICS (sem link: preencha em Clientes ICS).`);
   } catch {}
 }
+
+
+/* ---------- Power BI ---------- */
+let pbiA = [], pbiE = [], pbiVis = 'acessos', pbiFiltro = '', pbiCur = null, pbiTabela = 'pbi_acessos', pbiFiltroLink = '';
+try { pbiVis = localStorage.getItem('pbiVis') || 'acessos'; } catch {}
+const pbiBase = l => String(l || '').split('?')[0].trim().toLowerCase();
+const pbiUrl = u => { u = String(u || '').trim(); return !u ? '' : /^https?:\/\//i.test(u) ? u : 'https://' + u; };
+async function copiar(txt, rotulo){
+  try { await navigator.clipboard.writeText(txt); }
+  catch { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  flash(`${rotulo} copiado.`);
+}
+async function loadPbi(){
+  $('#pbiBody').innerHTML = '<div class="empty">Carregando...</div>';
+  const [a, e] = await Promise.all([sb.from('pbi_acessos').select('*').order('usuario'), sb.from('pbi_empresas').select('*').order('nome')]);
+  if (a.error || e.error){ $('#pbiBody').innerHTML = `<div class="note">Não foi possível carregar o Power BI: ${esc((a.error || e.error).message)}. Rode o arquivo supabase-powerbi.sql no Supabase.</div>`; return; }
+  pbiA = a.data || []; pbiE = e.data || []; renderPbi();
+}
+function renderPbi(){
+  const ed = podeEditar('pbi'), q = norm($('#pbiSearch').value);
+  $('#pbiNew').hidden = !ed; $('#pbiXlsx').hidden = !ed;
+  $('#pbiNew').textContent = pbiVis === 'acessos' ? '+ Novo acesso' : '+ Nova empresa';
+  $('#pbiDica').hidden = pbiVis !== 'acessos';
+  document.querySelectorAll('#pbiVis [data-vis]').forEach(b => b.setAttribute('aria-pressed', b.dataset.vis === pbiVis));
+  if (pbiVis === 'acessos'){
+    const tipos = [...new Set(pbiA.map(x => x.acesso || 'Sem tipo'))].sort((a, b) => (a === 'BI' ? -1 : b === 'BI' ? 1 : a.localeCompare(b)));
+    $('#pbiFil').innerHTML = ['', ...tipos].map(t => `<button type="button" data-fil="${esc(t)}" aria-pressed="${t === pbiFiltro}">${t ? esc(t) : 'Todos'} <b>${pbiA.filter(x => !t || (x.acesso || 'Sem tipo') === t).length}</b></button>`).join('');
+    const nEmp = {}; pbiE.forEach(x => { const k = pbiBase(x.link); if (k) nEmp[k] = (nEmp[k] || 0) + 1; });
+    const rows = pbiA.filter(x => (!pbiFiltro || (x.acesso || 'Sem tipo') === pbiFiltro) && (!q || [x.usuario, x.acesso, x.obs, x.link].some(v => norm(v).includes(q))));
+    $('#pbiBody').innerHTML = !rows.length ? '<div class="empty">Nenhum acesso encontrado.</div>' : `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Usuário</th><th>Senha</th><th>Acesso</th><th>Observação</th><th></th></tr></thead><tbody>
+      ${rows.map(x => { const u = pbiUrl(x.link), n = nEmp[pbiBase(x.link)] || 0; return `<tr data-id="${x.id}" class="${x.ativo === false ? 'off' : ''}">
+        <td class="u">${esc(x.usuario)}<button type="button" class="ic" data-cpu title="Copiar usuário">Copiar</button></td>
+        <td>${x.senha ? `<span class="pbi-sen"><span data-sen>••••••••••</span><button type="button" class="ic" data-ver aria-label="Mostrar senha" title="Mostrar senha">👁</button><button type="button" class="ic" data-cps title="Copiar senha">Copiar</button></span>` : '<span class="pbi-note">sem senha</span>'}</td>
+        <td><span class="tag ${x.acesso === 'BI' ? 'bi' : x.acesso === 'Telemetria' ? 'tel' : ''}">${esc(x.acesso || '—')}</span>${x.ativo === false ? ' <span class="badge off">Inativo</span>' : ''}</td>
+        <td class="obs">${esc(x.obs || '')}</td>
+        <td><div class="pbi-act">${n ? `<button type="button" class="b-ghost" data-emps title="Empresas que usam este relatório">${n} empresa(s)</button>` : ''}${u ? `<a class="pbi-open" href="${esc(u)}" target="_blank" rel="noopener noreferrer">Abrir BI ↗</a>` : '<span class="pbi-note">sem link</span>'}${ed ? '<button type="button" class="b-ghost" data-ed>Editar</button>' : ''}</div></td></tr>`; }).join('')}
+      </tbody></table></div>`;
+  } else {
+    const tipos = [...new Set(pbiE.map(x => x.tipo || 'Sem tipo'))].sort();
+    $('#pbiFil').innerHTML = ['', ...tipos].map(t => `<button type="button" data-fil="${esc(t)}" aria-pressed="${t === pbiFiltro}">${t ? esc(t) : 'Todos'}</button>`).join('')
+      + (pbiFiltroLink ? ` <button type="button" data-limpa aria-pressed="true">Relatório filtrado ×</button>` : '');
+    const rows = pbiE.filter(x => (!pbiFiltro || (x.tipo || 'Sem tipo') === pbiFiltro) && (!pbiFiltroLink || pbiBase(x.link) === pbiFiltroLink)
+      && (!q || [x.nome, x.arquivo, x.empresa, x.email, x.pasta, x.obs].some(v => norm(v).includes(q))));
+    const grupos = {}; rows.forEach(x => { const k = (x.nome || '') + '|' + (x.arquivo || ''); (grupos[k] ||= []).push(x); });
+    const keys = Object.keys(grupos).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    $('#pbiBody').innerHTML = !keys.length ? '<div class="empty">Nenhuma empresa encontrada.</div>' : `<p class="pbi-note">${rows.length} empresa(s) em ${keys.length} relatório(s)</p>` + keys.map(k => { const l = grupos[k], g = l[0], u = pbiUrl(g.link);
+      return `<div class="det-card pbi-grp"><div class="pbi-gh"><div><h3>${esc(g.nome)} <span class="tag">${esc(g.tipo || '')}</span></h3><small>${esc(g.arquivo || '')}</small></div>
+        ${u ? `<a class="pbi-open" href="${esc(u)}" target="_blank" rel="noopener noreferrer">Abrir relatório ↗</a>` : ''}</div>
+        <div class="ls-wrap"><table class="ls-table"><thead><tr><th>Empresa</th><th>E-mail (idEmpresa)</th><th>Observação</th><th></th></tr></thead><tbody>
+        ${l.map(x => `<tr data-id="${x.id}"><td><b>${esc(x.empresa || '—')}</b></td><td class="pbi-mail">${esc(x.email || '')}${x.email ? ' <button type="button" class="ic" data-cpe title="Copiar e-mail">Copiar</button>' : ''}</td>
+          <td class="obs">${esc(x.obs || '')}</td><td><div class="pbi-act">${ed ? '<button type="button" class="b-ghost" data-ed>Editar</button>' : ''}</div></td></tr>`).join('')}
+        </tbody></table></div></div>`; }).join('');
+  }
+}
+$('#pbiSearch').addEventListener('input', renderPbi);
+$('#pbiVis').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.vis){ pbiVis = b.dataset.vis; pbiFiltro = ''; pbiFiltroLink = ''; try { localStorage.setItem('pbiVis', pbiVis); } catch {} }
+  else if (b.dataset.fil !== undefined) pbiFiltro = b.dataset.fil;
+  else if (b.dataset.limpa !== undefined) pbiFiltroLink = '';
+  renderPbi();
+});
+$('#pbiBody').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+  const lista = pbiVis === 'acessos' ? pbiA : pbiE, x = lista.find(r => String(r.id) === tr.dataset.id);
+  if (e.target.closest('[data-cpu]')) copiar(x.usuario.trim(), 'Usuário');
+  else if (e.target.closest('[data-cps]')) copiar(x.senha, 'Senha');
+  else if (e.target.closest('[data-cpe]')) copiar(x.email, 'E-mail');
+  else if (e.target.closest('[data-ver]')){ const sp = tr.querySelector('[data-sen]'), b = e.target.closest('[data-ver]'), aberto = sp.textContent !== '••••••••••';
+    sp.textContent = aberto ? '••••••••••' : x.senha; b.setAttribute('aria-label', aberto ? 'Mostrar senha' : 'Ocultar senha');
+    if (!aberto) setTimeout(() => { if (sp.isConnected){ sp.textContent = '••••••••••'; } }, 20000); }
+  else if (e.target.closest('[data-emps]')){ pbiVis = 'empresas'; pbiFiltro = ''; pbiFiltroLink = pbiBase(x.link); $('#pbiSearch').value = ''; renderPbi(); }
+  else if (e.target.closest('[data-ed]')) openPbi(x);
+});
+const PBI_CAMPOS = {
+  pbi_acessos: [['usuario','Usuário','s2'],['senha','Senha',''],['acesso','Acesso (BI, Telemetria...)','',{list:'pbiAcessoSug'}],['link','Link do relatório','s4',{type:'url'}],['obs','Observação','s3'],['ativo','Situação','',{sel:true}]],
+  pbi_empresas: [['nome','Grupo / consórcio / órgão gestor','s2'],['tipo','Tipo','s2',{list:'pbiTipoSug'}],['empresa','Empresa','s2'],['email','E-mail (idEmpresa)','s2'],['arquivo','Nome do arquivo (BI_RS_...)','s2'],['pasta','Pasta','s2'],['link','Link do relatório','s4',{type:'url'}],['obs','Observação','s4']]
+};
+function openPbi(x){
+  pbiTabela = pbiVis === 'acessos' ? 'pbi_acessos' : 'pbi_empresas'; pbiCur = x || null;
+  $('#pbiTitle').textContent = (x ? 'Editar ' : 'Novo ') + (pbiTabela === 'pbi_acessos' ? 'acesso Power BI' : 'cadastro de empresa');
+  $('#pbiForm').innerHTML = PBI_CAMPOS[pbiTabela].map(([k, t, cls, o = {}]) => o.sel
+    ? `<label class="f ${cls}">${t}<select data-k="${k}"><option value="1">Ativo</option><option value="0"${x && x.ativo === false ? ' selected' : ''}>Inativo</option></select></label>`
+    : `<label class="f ${cls}">${t}<input type="${o.type || 'text'}" data-k="${k}" value="${esc(x?.[k] ?? '')}"${o.list ? ` list="${o.list}"` : ''}${k === 'senha' ? ' autocomplete="off"' : ''}></label>`).join('');
+  $('#pbiErr').textContent = ''; $('#pbiDel').hidden = !(x && isAdmin); $('#pbiModal').hidden = false; $('#pbiForm input').focus();
+}
+$('#pbiNew').addEventListener('click', () => openPbi(null));
+$('#pbiCancel').addEventListener('click', () => { $('#pbiModal').hidden = true; });
+$('#pbiSave').addEventListener('click', async () => {
+  const row = {}; $('#pbiForm').querySelectorAll('[data-k]').forEach(el => { const k = el.dataset.k; row[k] = k === 'ativo' ? el.value === '1' : (el.value.trim() || null); });
+  if (row.link) row.link = pbiUrl(row.link);
+  const obrig = pbiTabela === 'pbi_acessos' ? 'usuario' : 'nome';
+  if (!row[obrig]){ $('#pbiErr').textContent = pbiTabela === 'pbi_acessos' ? 'Informe o usuário.' : 'Informe o grupo / consórcio.'; return; }
+  if (pbiTabela === 'pbi_acessos') row.updated_at = new Date().toISOString();
+  $('#pbiSave').disabled = true;
+  const r = pbiCur ? await sb.from(pbiTabela).update(row).eq('id', pbiCur.id) : await sb.from(pbiTabela).insert(row);
+  $('#pbiSave').disabled = false;
+  if (r.error){ $('#pbiErr').textContent = 'Não foi possível salvar: ' + r.error.message; return; }
+  $('#pbiModal').hidden = true; flash('Salvo.'); loadPbi();
+});
+$('#pbiDel').addEventListener('click', async () => {
+  const v = await ask('Excluir?', 'Este cadastro do Power BI será excluído.', [['Cancelar','b-ghost',null],['Excluir','b-danger','ok']]);
+  if (!v) return;
+  const r = await sb.from(pbiTabela).delete().eq('id', pbiCur.id);
+  if (r.error){ $('#pbiErr').textContent = 'Não foi possível excluir: ' + r.error.message; return; }
+  $('#pbiModal').hidden = true; flash('Excluído.'); loadPbi();
+});
+$('#pbiXlsx').addEventListener('click', async () => {
+  const wb = new ExcelJS.Workbook();
+  const add = (nome, cols, rows) => { const ws = wb.addWorksheet(nome); ws.columns = cols; rows.forEach(r => ws.addRow(r));
+    ws.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } }; ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF003B5C' } }; ws.autoFilter = { from:'A1', to:{ row:1, column:cols.length } }; };
+  add('Usuários BI', [{header:'Usuario',key:'usuario',width:24},{header:'Senha',key:'senha',width:26},{header:'Acesso',key:'acesso',width:12},{header:'Links',key:'link',width:70},{header:'OBS',key:'obs',width:30},{header:'Situação',key:'sit',width:10}], pbiA.map(x => ({ ...x, sit: x.ativo === false ? 'Inativo' : 'Ativo' })));
+  add('Empresas BI', [{header:'Nome',key:'nome',width:24},{header:'Tipo (Power Apps)',key:'tipo',width:24},{header:'Nome do arquivo',key:'arquivo',width:36},{header:'Empresa',key:'empresa',width:30},{header:'idEmpresa',key:'email',width:34},{header:'link',key:'link',width:70},{header:'Pasta',key:'pasta',width:40},{header:'Obs',key:'obs',width:30}], pbiE);
+  const buf = await wb.xlsx.writeBuffer(), a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([buf])); a.download = 'PowerBI_Usuario_Senha.xlsx'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
 
 // sugestões de Responsável/Coordenador a partir dos cadastros (o campo continua livre)
 function certSugestoes(){
