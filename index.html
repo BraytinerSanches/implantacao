@@ -3283,13 +3283,19 @@ function statusData(r){
   const atrasadas = atv.filter(a => !a.foraPrazo && !feita(a) && a.fim && a.fim < hoje).length;
   const aten = atv.filter(a => a.status === 'Atenção').map(a => a.nome + (a.obs ? ': ' + a.obs : ''));
   if ((st.atencao||'').trim()) aten.push(st.atencao.trim());
-  return {
+  const sd = {
     tipo: tipoDe(r), tipoAtividade: c.tipoAtividade || '',
     nome: r.cliente || c.nome || 'Sem nome', coord: c.coordenador || '', analista: c.cittati || '', inicio: c.inicio || '', fim: c.fim || '',
     atualizado: r.updated_at, status, servico: (c.produtos||[]).join(' + ') || c.produto || '', equip: (e.hardware||[]).join(', '),
-    veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', aten, atrasadas, prox: atv.filter(a => !feita(a) && !a.foraPrazo), pendCli: atv.filter(a => !feita(a) && a.foraPrazo), fin: concl,
+    veiculos: e.frotaTot || e.avls || '', obs: st.obs || '', objetivo: null, aten, atrasadas, prox: atv.filter(a => !feita(a) && !a.foraPrazo), pendCli: atv.filter(a => !feita(a) && a.foraPrazo), fin: concl,
     prog: implStats(atv).prog, total: atv.length
   };
+  // OBJETIVO: Atividade não tem Entrega para Suporte -> mostra tipo e período no lugar de equipamento e veículos
+  const per = [sd.inicio, sd.fim].filter(Boolean).map(fmtDate).join(' a ') || '—';
+  sd.objetivo = tipoDe(r) === 'Atividade'
+    ? [['Cliente', sd.nome], ['Serviço', sd.servico || '—'], ['Tipo de atividade', c.tipoAtividade || '—'], ['Período', per]]
+    : [['Cliente', sd.nome], ['Serviço', sd.servico || '—'], ['Equipamento', sd.equip || '—'], ['Veículos', String(sd.veiculos || '—')]];
+  return sd;
 }
 // datas puras (AAAA-MM-DD) ficam como estão; data e hora do banco (UTC) são convertidas para o horário local
 const dBR = v => { if (!v) return '—'; const t = String(v); return t.length <= 10 ? fmtDate(t) : new Date(t).toLocaleDateString('pt-BR'); };
@@ -3347,8 +3353,7 @@ function reportHTML(r){
       <p>Fim Projeto: <em>${dBR(d.fim)}</em></p></div>
       <div class="sr-status">Status: <div class="sr-oval ${ST_CLS[d.status]}">${d.status.toUpperCase()}</div></div></div>
     <div class="sr-bar">OBJETIVO</div>
-    <ul class="sr-obj"><li>Cliente: <em>${esc(d.nome)}</em></li><li>Serviço: <em>${esc(d.servico||'—')}</em></li>
-      <li>Equipamento: <em>${esc(d.equip||'—')}</em></li><li>Veículos: <em>${esc(String(d.veiculos||'—'))}</em></li></ul>
+    <ul class="sr-obj">${d.objetivo.map(([l, v]) => `<li>${l}: <em>${esc(v)}</em></li>`).join('')}</ul>
     <div class="sr-cols">
       <div><div class="sr-bar big">Observações</div><div class="sr-box">${esc(d.obs) || ' '}</div>
         <div class="sr-h">PRÓXIMAS ATIVIDADES</div>${tbl(d.prox, 'Nenhuma atividade pendente')}</div>
@@ -3426,7 +3431,7 @@ async function stPptx(r, base, asBlob){
   sl.addText(d.status.toUpperCase(), { shape: pres.shapes.OVAL, x:10.95, y:1.15, w:1.95, h:1.0, fill:{ color:fill }, line:{ color:'4472C4', width:1 },
     fontFace:F, fontSize:12, bold:true, color: ['Em andamento','Não iniciado'].includes(d.status) ? '000000' : 'FFFFFF', align:'center', valign:'middle' });
   sl.addText('OBJETIVO', { x:0.05, y:2.3, w:13.2, h:0.32, fill:{ color:GRAY }, color:'FFFFFF', fontFace:F, fontSize:12, align:'center', valign:'middle', isTextBox:true, margin:0 });
-  const obj = [['Cliente: ', d.nome], ['Serviço: ', d.servico||'—'], ['Equipamento: ', d.equip||'—'], ['Veículos: ', String(d.veiculos||'—')]];
+  const obj = d.objetivo.map(([l, v]) => [l + ': ', v]);
   sl.addText(obj.flatMap(([l,v], i) => [{ text:l, options:{ bullet:true, color:'000000' } }, { text:v, options:{ color:RED, breakLine: i < obj.length-1 } }]),
     { x:0.05, y:2.62, w:13.2, h:1.05, fontFace:F, fontSize:12, bold:true, valign:'top', line:{ color:GRAY, width:0.75 }, isTextBox:true });
   const colW = 6.5, xL = 0.05, xR = 6.75;
@@ -4364,7 +4369,7 @@ async function checklistXlsx(JSZip, modelo, d, saida){
     x = x.replace(rm[0], r);
   }
   const num = v => v === '' || v == null || isNaN(Number(v)) ? null : Number(v);
-  setCell('H6', d.empresa); setCell('H7', d.coordenador); setCell('H8', d.produto); setCell('H9', d.analista); setCell('B13', d.empresa);
+  setCell('H6', d.empresa); setCell('H7', d.coordenador); setCell('H8', d.produto); setCell('H9', d.analista); setCell('B13', null);   // B13 fica vazia (pedido do usuário)
   setCell('G12', d.inicio ? serial(d.inicio) : null); setCell('G13', d.fim ? serial(d.fim) : null);
   setCell('H17', num(d.remPrev)); setCell('I17', num(d.remReal)); setCell('H18', num(d.presPrev)); setCell('I18', num(d.presReal));
   setCell('H21', num(d.custoPrev)); setCell('I21', num(d.custoReal));
